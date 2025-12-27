@@ -1,6 +1,5 @@
 import React from 'react';
-// Імпортуємо логотип (переконайся, що файл існує!)
-import logoImg from '../assets/brand/logo.png'; 
+import logoImg from '../assets/img/brand/logo.png'; 
 
 const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
 
@@ -21,7 +20,7 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
                 rounded-[2rem] bg-[#0a0e17]/80 backdrop-blur-xl 
                 border border-white/10 shadow-2xl
             ">
-                {/* Логотип (Картинка) */}
+                {/* LOGO */}
                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveTab('swap')}>
                     <img 
                         src={logoImg} 
@@ -33,7 +32,7 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
                     </span>
                 </div>
 
-                {/* Навігація */}
+                {/* NAVBAR */}
                 <nav className="hidden md:flex items-center gap-10 select-none">
                     <div onClick={() => setActiveTab('swap')} className={getLinkClass('swap')}>
                         {t.swap}
@@ -55,10 +54,10 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
                     </div>
                 </nav>
 
-                {/* Права частина */}
+                {/* RIGHT PART */}
                 <div className="flex items-center gap-6 text-sm font-mono select-none">
                     
-                    {/* Перемикач мови (Клікабельний) */}
+                    {/* LANGUAGE */}
                     <button 
                         onClick={toggleLang}
                         className="hidden sm:block text-gray-400 hover:text-white hover:bg-white/10 px-3 py-1 rounded-lg transition-all border border-transparent hover:border-white/10"

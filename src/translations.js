@@ -11,6 +11,16 @@ export const translations = {
             rate: 'Rate',
             gas: 'Gas Cost',
             button: 'SWAP NOW'
+        },
+        pools: {
+            title: 'Active Pools',
+            subtitle: 'Grow Your Capital',
+            searchPlaceholder: 'Search...',
+            hot: 'Hot',
+            deposit: 'Deposit',
+            tvl: 'TVL',
+            vol: 'Volume 24h',
+            apr: 'APR'
         }
     },
     ua: {
@@ -25,6 +35,16 @@ export const translations = {
             rate: 'Курс',
             gas: 'Газ (Комісія)',
             button: 'ОБМІНЯТИ'
+        },
+        pools: {
+            title: 'Пули ліквідності',
+            subtitle: 'Примножуй Капітал',
+            searchPlaceholder: 'Пошук...',
+            hot: 'Топ',
+            deposit: 'Вкласти',
+            tvl: 'TVL',
+            vol: 'Об\'єм 24г',
+            apr: 'Річних'
         }
     }
 };

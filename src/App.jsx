@@ -1,19 +1,13 @@
 import React, { useState } from 'react'
 import Header from './components/Header';
 import SwapCard from './components/SwapCard';
+import PoolsCard from './components/PoolsCard';
 import { translations } from './translations';
 
-const Pools = ({ t }) => (
-    <div className="glass-panel p-8 rounded-3xl max-w-2xl w-full text-center animate-fade-in border border-white/10 bg-[#131823]/60 backdrop-blur-xl">
-        <h2 className="text-3xl font-bold text-white mb-4">{t.nav.pools}</h2>
-        <p className="text-gray-400">Coming soon / Скоро буде</p>
-    </div>
-);
-
 const Earn = ({ t }) => (
-    <div className="glass-panel p-8 rounded-3xl max-w-2xl w-full text-center animate-fade-in border border-white/10 bg-[#131823]/60 backdrop-blur-xl">
-        <h2 className="text-3xl font-bold text-white mb-4">{t.nav.earn}</h2>
-        <p className="text-gray-400">Coming soon / Скоро буде</p>
+    <div className="glass-panel p-10 rounded-3xl max-w-3xl w-full text-center animate-fade-in border border-white/10 bg-[#131823]/60 backdrop-blur-xl">
+        <h2 className="text-4xl font-bold text-white mb-4">{t.nav.earn}</h2>
+        <p className="text-xl text-gray-400">Staking is coming soon...</p>
     </div>
 );
 
@@ -32,8 +26,8 @@ function App() {
   const renderContent = () => {
     switch(activeTab) {
       case 'swap': return <SwapCard t={t.swap} />;
-      case 'pools': return <Pools t={t.pools} />;
-      case 'earn': return <Earn t={t.earn} />;
+      case 'pools': return <PoolsCard t={t.pools} />;
+      case 'earn': return <Earn t={t} />;
       default: return <SwapCard t={t.swap} />;
     }
   };
@@ -41,6 +35,7 @@ function App() {
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
       
+      {/* EFFECTS */}
       <div className="fixed top-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-[#0066ff]/20 rounded-full blur-[160px] pointer-events-none mix-blend-screen animate-pulse-slow" />
       <div className="fixed top-[20%] -left-[10%] w-[800px] h-[800px] bg-[#ffaa00]/10 rounded-full blur-[180px] pointer-events-none mix-blend-screen" />
       <div className="fixed bottom-[-10%] left-[20%] w-[1200px] h-[600px] bg-[#00d4ff]/5 rounded-full blur-[140px] pointer-events-none" />
