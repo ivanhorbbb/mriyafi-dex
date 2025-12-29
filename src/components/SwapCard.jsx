@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search } from 'lucide-react';
+import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle } from 'lucide-react';
 
 import eth from '../assets/img/tokens/eth.png';
 import usdc from '../assets/img/tokens/usdc.png';
@@ -22,14 +22,24 @@ const SwapCard = ({ t }) => {
     // STATES
     const [payToken, setPayToken] = useState(tokensList[0]);
     const [receiveToken, setReceiveToken] = useState(tokensList[1]);
-
     const [payAmount, setPayAmount] = useState('1.5');
     const [receiveAmount, setReceiveAmount] = useState('');
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalType, setModalType] = useState('pay');
+    const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+    const [tokenModalType, setTokenModalType] = useState('pay');
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [slippage, setSlippage] = useState(0.5);
+    const [deadline, setDeadline] = useState(20);
 
     const exchangeRate = payToken.price / receiveToken.price;
+
+    const filteredTokens = tokensList.filter((token) => 
+        token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     useEffect(() => {
         if (payAmount) {
@@ -74,33 +84,44 @@ const SwapCard = ({ t }) => {
         }
     }
 
-    // 3.Swap Tokens
+    // 3. MAX Button
+    const handleMaxClick = () => {
+        const cleanBalance = payToken.balance.replace(/,/g, '');
+        
+        setPayAmount(cleanBalance);
+        
+        if (cleanBalance && !isNaN(cleanBalance)) {
+            const result = (parseFloat(cleanBalance) * exchangeRate).toFixed(6);
+            setReceiveAmount(parseFloat(result).toString());
+        }
+    };
+
+    // 4.Swap Tokens
     const handleSwapArrows = () => {
         const temp = payToken;
         setPayToken(receiveToken);
         setReceiveToken(temp);
     };
 
-    // 4. Open Tokens List
+    // 5. Open Tokens List
     const openTokenModal = (type) => {
-        setModalType(type);
-        setIsModalOpen(true);
+        setTokenModalType(type);
+        setSearchQuery('');
+        setIsTokenModalOpen(true);
     };
 
-    // 5. Select Token
+    // 6. Select Token
     const selectToken = (token) => {
-        if (modalType === 'pay') {
-            if (token.symbol === receiveToken.symbol) {
-                setReceiveToken(payToken);
-            }
+        if (tokenModalType === 'pay') {
+            if (token.symbol === receiveToken.symbol) setReceiveToken(payToken);
             setPayToken(token);
+            setPayAmount('');
+            setReceiveAmount('');
         } else {
-            if (token.symbol === payToken.symbol) {
-                setPayToken(receiveToken);
-            }
+            if (token.symbol === payToken.symbol) setPayToken(receiveToken);
             setReceiveToken(token);
         }
-        setIsModalOpen(false);
+        setIsTokenModalOpen(false);
     };
 
     return(
@@ -111,7 +132,9 @@ const SwapCard = ({ t }) => {
                 {/* HEADER */}
                 <div className="flex justify-between items-center mb-8 px-2">
                     <h2 className="text-2xl font-semibold text-white tracking-wide">{t.title}</h2>
-                    <button className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-500 p-2 rounded-full hover:bg-white/5">
+                    <button 
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-500 p-2 rounded-full hover:bg-white/5">
                         <Settings size={24} />
                     </button>
                 </div>
@@ -122,7 +145,12 @@ const SwapCard = ({ t }) => {
                     
                         <div className="flex justify-between mb-4">
                             <span className="text-gray-400 text-base font-medium">{t.pay}</span>
-                            <span className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-[#00d4ff]/20 transition">Max</span>
+                            <button 
+                                onClick={handleMaxClick}
+                                className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-[#00d4ff]/20 transition font-bold"
+                            >
+                                Max
+                            </button>
                         </div>
 
                         <div className="flex justify-between items-center mb-2">
@@ -167,7 +195,7 @@ const SwapCard = ({ t }) => {
                 <div className="relative group z-0">
                     <div className="bg-[#0a0e17]/60 rounded-[2rem] p-6 border border-transparent group-hover:border-[#f0dfae]/30 transition-all duration-300 shadow-none group-hover:shadow-[0_0_40px_rgba(240,233,174,0.08)] pt-8">
                         <div className="flex justify-between mb-4">
-                            <span className="text-gray-400 text-base font-medium">{t.receive}<span className="text-xs opacity-50">({t.estimated})</span></span>
+                            <span className="text-gray-400 text-base font-medium">{t.receive} <span className="text-xs opacity-50">({t.estimated})</span></span>
                         </div>
 
                         <div className="flex justify-between items-center mb-2">
@@ -218,25 +246,22 @@ const SwapCard = ({ t }) => {
             </div>
 
             {/* TOKEN SELECT MODAL WINDOW*/}
-            {isModalOpen && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-
-                    {/* BG*/}
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-[3rem]"
-                        onClick={() => setIsModalOpen(false)}
-                    />
-
+            {isTokenModalOpen && (
+                <div 
+                    className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-[3rem]"
+                    onClick={() => setIsTokenModalOpen(false)}
+                >
+                    
                     {/* MODAL WINDOW*/}
-                    <div className="relative w-full h-full bg-[#131823] rounded-[2.5rem] p-6 flex flex-col animate-fade-in border border-white/10 shadow-2xl">
+                    <div 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="relative w-full h-full bg-[#131823] rounded-[2.5rem] p-6 flex flex-col animate-fade-in border border-white/10 shadow-2xl"
+                    >
                         
                         {/* TITLE*/}
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">Select Token</h3>
-                            <button 
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-full"
-                            >
+                            <h3 className="text-xl font-bold text-white">{t.selectToken}</h3>
+                            <button onClick={() => setIsTokenModalOpen(false)} className="text-gray-400 hover:text-white p-1 hover:bg-white/10 rounded-full">
                                 <X size={24} />    
                             </button>
                         </div>
@@ -246,39 +271,129 @@ const SwapCard = ({ t }) => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                             <input 
                                 type="text" 
-                                placeholder='Search name or address'
+                                placeholder={t.searchPlaceholder}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-[#0a0e17] border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00d4ff]/50"
                             />
                         </div>
 
                         {/* TOKENS LIST*/}
                         <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                            {tokensList.map((token) => (
-                                <div
-                                    key={token.symbol}
-                                    onClick={() => selectToken(token)}
-                                    className={`
-                                        flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
-                                        ${(modalType === 'pay' ? payToken.symbol : receiveToken.symbol) === token.symbol
-                                            ? 'bg-[#00d4ff]/10 border border-[#00d4ff]/30'
-                                            : 'hover:bg-white/5 border border-transparent'
-                                        }    
-                                    `}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <img src={token.img} alt={token.symbol} className="w-9 h-9 rounded-full" />
-                                        <div className="flex flex-col">
-                                            <span className="text-white font-bold">{token.symbol}</span>
-                                            <span className="text-gray-500 text-xs">{token.name}</span>
+                            {filteredTokens.length > 0 ? (
+                                filteredTokens.map((token) => (
+                                    <div
+                                        key={token.symbol}
+                                        onClick={() => selectToken(token)}
+                                        className={`
+                                            flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
+                                            ${(tokenModalType === 'pay' ? payToken.symbol : receiveToken.symbol) === token.symbol
+                                                ? 'bg-[#00d4ff]/10 border border-[#00d4ff]/30'
+                                                : 'hover:bg-white/5 border border-transparent'
+                                            }    
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <img src={token.img} alt={token.symbol} className="w-9 h-9 rounded-full" />
+                                            <div className="flex flex-col">
+                                                <span className="text-white font-bold">{token.symbol}</span>
+                                                <span className="text-gray-500 text-xs">{token.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-white font-mono text-sm">{token.balance}</div>
+                                            <div className="text-gray-500 text-xs">${token.price}</div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-white font-mono text-sm">{token.balance}</div>
-                                        <div className="text-gray-500 text-xs">${token.price}</div>
+                                ))
+                            ) : (
+                                <div className="text-center text-gray-500 py-4">
+                                    No tokens found
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SETTINGS MODAL */}
+            {isSettingsOpen && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-[3rem]"
+                    onClick={() => setIsSettingsOpen(false)}
+                >
+
+                    <div
+                        onClick={(e) => e.stopPropagation()} 
+                        className="relative w-full max-h-[500px] bg-[#131823]/90 backdrop-blur-xl rounded-[3rem] p-8 flex flex-col animate-fade-in border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+                    >
+
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="text-xl font-bold text-white">{t.settings.title}</h3>
+                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-white p-1 bg-white/10 rounded-full">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Slippage */}
+                        <div className="mb-6">
+                            <div className="flex items-center gap-2 mb-4 text-gray-400 text-sm font-medium">
+                                {t.settings.slippage}
+                                <div className="group relative flex items-center">
+                                    <HelpCircle size={16} className="cursor-help text-gray-500 hover:text-white transition-colors" />
+                                    <div className="absolute bottom-full left1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-xs text-gray-200 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 text-center shadow-xl border border-white/10">
+                                        {t.settings.slippageInfo}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900" />
                                     </div>
                                 </div>
-                            ))}
+                            </div>
+                            <div className="flex gap-3">
+                                {[0.1, 0.5, 1.0].map((val) => (
+                                    <button
+                                        key={val}
+                                        onClick={() => setSlippage(val)}
+                                        className={`px-5 py-3 rounded-2xl text-sm font-bold border transition-all ${slippage === val ? 'bg[#00d4ff]/20 border-[#00d4ff]' : 'bg-[#0a0e17] border-white/10 text-gray-300 hover:border-white/30'}`}
+                                    >
+                                        {val}%
+                                    </button>
+                                ))}
+                                <div className={`flex items-center px-4 rounded-2xl border ${![0.1, 0.5, 1.0].includes(slippage) ? 'border-[#00d4ff]' : 'border-white/10'} bg-[#0a0e17] flex-1`}>
+                                    <input 
+                                        type="number"
+                                        placeholder="Custom"
+                                        value={slippage}
+                                        onChange={(e) => setSlippage(parseFloat(e.target.value))} 
+                                        className="w-full bg-transparent text-white text-right outline-none font-bold" 
+                                    />
+                                    <span className="text-gray-500 ml-1">%</span>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Deadline */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-4 text-gray-400 text-sm font-medium">
+                                {t.settings.deadline} 
+                                <div className="group relative flex items-center">
+                                    <HelpCircle size={16} className="cursor-help text-gray-500 hover:text-[#00d4ff] transition-colors" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-xs text-gray-200 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 text-center shadow-xl border border-white/10">
+                                        {t.settings.deadlineInfo}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-32 bg-[#0a0e17] border border-white/10 rounded-2xl px-4 flex items-center">
+                                    <input 
+                                        type="number" 
+                                        value={deadline}
+                                        onChange={(e) => setDeadline(e.target.value)}
+                                        className="w-full bg-transparent text-white text-right outline-none font-bold py-3" 
+                                    />
+                                </div>
+                                <span className="text-gray-400 text-sm font-medium">{t.settings.minutes}</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             )}

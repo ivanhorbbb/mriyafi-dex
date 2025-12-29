@@ -10,7 +10,17 @@ export const translations = {
             cheaper: 'cheaper than Binance',
             rate: 'Rate',
             gas: 'Gas Cost',
-            button: 'SWAP NOW'
+            button: 'SWAP NOW',
+            selectToken: 'Select Token',
+            searchPlaceholder: 'Search name or address',
+            settings: {
+                title: 'Transaction Settings',
+                slippage: 'Slippage Tolerance',
+                slippageInfo: 'Your transaction will revert if the price changes unfavorably by more than this percentage.',
+                deadline: 'Transaction Deadline',
+                deadlineInfo: 'Your transaction will revert if it is pending for more than this long.',
+                minutes: 'minutes'
+            }
         },
         pools: {
             title: 'Active Pools',
@@ -51,7 +61,17 @@ export const translations = {
             cheaper: 'дешевше ніж Binance',
             rate: 'Курс',
             gas: 'Газ (Комісія)',
-            button: 'ОБМІНЯТИ'
+            button: 'ОБМІНЯТИ',
+            selectToken: 'Виберіть токен',
+            searchPlaceholder: 'Пошук назви чи адреси',
+            settings: {
+                title: 'Налаштування транзакції',
+                slippage: 'Допуск прослизання (Slippage)',
+                slippageInfo: 'Транзакція буде скасована, якщо ціна зміниться несприятливо більше ніж на цей відсоток.',
+                deadline: 'Дедлайн транзакції',
+                deadlineInfo: 'Транзакція буде скасована, якщо вона оброблятиметься довше цього часу.',
+                minutes: 'хвилин'
+            }
         },
         pools: {
             title: 'Пули ліквідності',
