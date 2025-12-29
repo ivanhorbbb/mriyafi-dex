@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import logoImg from '../assets/img/brand/logo.png'; 
 
 const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
+
+    const tabsRef = useRef({});
+
+    const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, opacity: 0});
+
+    useEffect(() => {
+        const currentTab = tabsRef.current[activeTab];
+
+        if (currentTab) {
+            const newLeft = currentTab.offsetLeft + (currentTab.offsetWidth / 2) - 20;
+
+            setIndicatorStyle({
+                left: newLeft,
+                opacity: 1
+            });
+        }
+    }, [activeTab]);
 
     const getLinkClass = (tabName) => {
         const baseClass = "cursor-pointer transition-colors relative group py-2 text-lg "; // Збільшив шрифт (text-lg)
@@ -33,24 +50,34 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
                 </div>
 
                 {/* NAVBAR */}
-                <nav className="hidden md:flex items-center gap-10 select-none">
-                    <div onClick={() => setActiveTab('swap')} className={getLinkClass('swap')}>
+                <nav className="hidden md:flex items-center gap-10 select-none relative">
+                    <div
+                        className="absolute -bottom-4 h-1 w-10 bg-[#00d4ff] rounded-full shadow-[0_0_10px_#00d4ff] transition-all duration-300 ease-in-out pointer-events-none"
+                        style={{
+                            left: `${indicatorStyle.left}px`,
+                            opacity: indicatorStyle.opacity
+                        }}
+                    />
+                    <div 
+                        ref={el => tabsRef.current['swap'] = el}
+                        onClick={() => setActiveTab('swap')} 
+                        className={getLinkClass('swap')}
+                    >
                         {t.swap}
-                        {activeTab === 'swap' && (
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#00d4ff] rounded-full shadow-[0_0_10px_#00d4ff]" />
-                        )}
                     </div>
-                    <div onClick={() => setActiveTab('pools')} className={getLinkClass('pools')}>
+                    <div 
+                        ref={el => tabsRef.current['pools'] = el}
+                        onClick={() => setActiveTab('pools')}
+                        className={getLinkClass('pools')}
+                    >
                         {t.pools}
-                        {activeTab === 'pools' && (
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#00d4ff] rounded-full shadow-[0_0_10px_#00d4ff]" />
-                        )}
                     </div>
-                    <div onClick={() => setActiveTab('earn')} className={getLinkClass('earn')}>
+                    <div 
+                        ref={el => tabsRef.current['earn'] = el}
+                        onClick={() => setActiveTab('earn')}
+                        className={getLinkClass('earn')}
+                    >
                         {t.earn}
-                        {activeTab === 'earn' && (
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#00d4ff] rounded-full shadow-[0_0_10px_#00d4ff]" />
-                        )}
                     </div>
                 </nav>
 
