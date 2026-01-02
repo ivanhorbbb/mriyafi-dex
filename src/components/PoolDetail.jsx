@@ -46,6 +46,7 @@ const PoolDetail = ({ pool, onBack, t }) => {
                 return;
             }
             setUserLiquidity(prev => prev - val);
+            setUserFees(0.00);
         }
         setIsModalOpen(false);
     }

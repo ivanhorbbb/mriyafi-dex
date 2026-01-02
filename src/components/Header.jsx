@@ -21,7 +21,7 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
     }, [activeTab]);
 
     const getLinkClass = (tabName) => {
-        const baseClass = "cursor-pointer transition-colors relative group py-2 text-lg "; // Збільшив шрифт (text-lg)
+        const baseClass = "cursor-pointer transition-colors relative group py-2 text-lg ";
         if (activeTab === tabName) {
             return baseClass + "text-[#00d4ff] drop-shadow-[0_0_8px_rgba(0,212,255,0.6)] font-semibold";
         }
@@ -29,7 +29,7 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
     };
 
     return (
-        <div className="w-full flex justify-center pt-8 px-6 z-50">
+        <div className="w-full flex justify-center pt-8 px-6 relative z-[100]">
             <div className="
                 relative w-full max-w-6xl 
                 flex items-center justify-between 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
 
 import eth from '../assets/img/tokens/eth.png';
 import usdc from '../assets/img/tokens/usdc.png';
@@ -27,12 +28,13 @@ const SwapCard = ({ t }) => {
 
     const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
     const [tokenModalType, setTokenModalType] = useState('pay');
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const [searchQuery, setSearchQuery] = useState('');
-
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [slippage, setSlippage] = useState(0.5);
     const [deadline, setDeadline] = useState(20);
+
+    const [timeframe, setTimeframe] = useState('1D');
 
     const exchangeRate = payToken.price / receiveToken.price;
 
@@ -59,7 +61,6 @@ const SwapCard = ({ t }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setPayAmount(value);
-
             if (value && !isNaN(value)) {
                 const result = (parseFloat(value) * exchangeRate).toFixed(6);
                 setReceiveAmount(parseFloat(result).toString());
@@ -74,7 +75,6 @@ const SwapCard = ({ t }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setReceiveAmount(value);
-
             if (value && !isNaN(value)) {
                 const result = (parseFloat(value) / exchangeRate).toFixed(6);
                 setPayAmount(parseFloat(result).toString());
@@ -87,9 +87,7 @@ const SwapCard = ({ t }) => {
     // 3. MAX Button
     const handleMaxClick = () => {
         const cleanBalance = payToken.balance.replace(/,/g, '');
-        
         setPayAmount(cleanBalance);
-        
         if (cleanBalance && !isNaN(cleanBalance)) {
             const result = (parseFloat(cleanBalance) * exchangeRate).toFixed(6);
             setReceiveAmount(parseFloat(result).toString());
@@ -101,6 +99,11 @@ const SwapCard = ({ t }) => {
         const temp = payToken;
         setPayToken(receiveToken);
         setReceiveToken(temp);
+        const tempAmount = payAmount; 
+        if (tempAmount && !isNaN(tempAmount)) {
+             const result = (parseFloat(tempAmount) * (receiveToken.price / payToken.price)).toFixed(6);
+             setReceiveAmount(parseFloat(result).toString());
+        }
     };
 
     // 5. Open Tokens List
@@ -125,143 +128,191 @@ const SwapCard = ({ t }) => {
     };
 
     return(
-        <div className="w-full max-w-[580px] p-4 relative animate-fade-in">
+        <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
+            
+            <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                
+                {/* LEFT COLUMN: CHART */}
+                <div className="lg:col-span-2 flex flex-col">
+                    <div className="
+                        relative w-full h-full min-h-[550px] 
+                        rounded-[3rem] border border-white/10 
+                        bg-[#131823]/80 backdrop-blur-2xl shadow-2xl
+                        p-8 flex flex-col overflow-hidden
+                    ">
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="flex -space-x-2">
+                                    <img src={payToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
+                                    <img src={receiveToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
+                                </div>
+                                <div>
+                                    <div className="flex items-baseline gap-3">
+                                        <h2 className="text-2xl font-bold text-white">{payToken.symbol} / {receiveToken.symbol}</h2>
+                                        <span className="text-lg font-mono font-bold text-[#00d4ff]">+5.24%</span>
+                                    </div>
+                                    <div className="text-gray-400 text-sm font-medium">
+                                        1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}
+                                    </div>
+                                </div>
+                            </div>
 
-            <div className="backdrop-blur-2xl bg-[#131823]/80 border border-white/10 rounded-[3rem] shadow-2xl p-6 sm:p-8">
-
-                {/* HEADER */}
-                <div className="flex justify-between items-center mb-8 px-2">
-                    <h2 className="text-2xl font-semibold text-white tracking-wide">{t.title}</h2>
-                    <button 
-                        onClick={() => setIsSettingsOpen(true)}
-                        className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-500 p-2 rounded-full hover:bg-white/5">
-                        <Settings size={24} />
-                    </button>
-                </div>
-
-                {/* PAY BLOCK */}
-                <div className="relative group z-10">
-                    <div className="bg-[#0a0e17]/60 rounded-[2rem] p-6 border border-transparent group-hover:border-[#00d4ff]/30 transition-all duration-300 shadow-none group-hover:shadow-[0_0_40px_rgba(0,212,255,0.08)]">
-                    
-                        <div className="flex justify-between mb-4">
-                            <span className="text-gray-400 text-base font-medium">{t.pay}</span>
-                            <button 
-                                onClick={handleMaxClick}
-                                className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-[#00d4ff]/20 transition font-bold"
-                            >
-                                Max
-                            </button>
+                            {/* Timeframe */}
+                            <div className="flex bg-[#0a0e17]/50 p-1 rounded-xl border border-white/5">
+                                {['1H', '1D', '1W', '1M', '1Y'].map((tf) => (
+                                    <button 
+                                        key={tf}
+                                        onClick={() => setTimeframe(tf)}
+                                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${timeframe === tf ? 'bg-[#1a2c38] text-[#00d4ff] shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                    >
+                                        {tf}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex justify-between items-center mb-2">
-
-                            <button 
-                                onClick={() => openTokenModal('pay')}
-                                className="flex items-center gap-3 bg-black/30 hover:bg-black/50 px-4 py-2 rounded-full transition-all border border-transparent hover:border-white/10 shrink-0"
-                            >
-                                <img src={payToken.img} alt={payToken.symbol} className="w-8 h-8 rounded-full shadow-lg object-contain" />
-                                <span className="text-2xl font-bold text-white">{payToken.symbol}</span>
-                                <ChevronDown size={20} className="text-gray-400"/>
-                            </button>
-
-                            <input
-                                type="text"
-                                value={payAmount}
-                                onChange={handlePayInput}
-                                placeholder='0'
-                                className="bg-transparent text-right text-5xl font-bold text-white outline-none w-full placeholder-gray-600 font-sans"
-                            />
+                        {/* SVG Chart Mock */}
+                        <div className="flex-grow relative w-full min-h-[300px]">
+                            <svg viewBox="0 0 800 300" className="w-full h-full preserve-3d" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
+                                        <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
+                                    </linearGradient>
+                                </defs>
+                                {/* Grid */}
+                                <line x1="0" y1="50" x2="800" y2="50" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
+                                <line x1="0" y1="150" x2="800" y2="150" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
+                                <line x1="0" y1="250" x2="800" y2="250" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
+                                {/* Path */}
+                                <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60" fill="none" stroke="#00d4ff" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                                <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60 V 300 H 0 Z" fill="url(#chartGradient)" stroke="none" />
+                            </svg>
                         </div>
-
-                        <div className="flex justify-end text-xs text-gray-400 font-mono tracking-tight mt-2">
-                            {t.balance}: {payToken.balance}
-                        </div>
+                        
+                        {/* Chart Glow */}
+                        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00d4ff] rounded-full blur-[120px] opacity-10 pointer-events-none"></div>
                     </div>
                 </div>
 
-                {/* SWITCH BUTTON */}
-                <div className="relative h-4 z-20">
-                    <div className="absolute left-1/2 -translate-x-1/2 -top-6">
-                        <button 
-                            onClick={handleSwapArrows}
-                            className="bg-[#1a2c38] p-3 rounded-2xl border-[6px] border-[#131823] hover:scale-110 hover:border-[#131823] transition-transform duration-200 cursor-pointer group shadow-xl hover:rotate-180"
-                        >
-                            <ArrowUpDown size={22} className="text-[#00d4ff] group-hover:text-white transition-colors" />
+                {/* RIGHT COLUMN: SWAP */}
+                <div className="lg:col-span-1">
+                    <div className="
+                        relative w-full h-full min-h-[550px]
+                        backdrop-blur-2xl bg-[#131823]/80 border border-white/10 rounded-[3rem] 
+                        shadow-2xl p-6 sm:p-8 flex flex-col
+                    ">
+                        {/* Swap Header */}
+                        <div className="flex justify-between items-center mb-6 px-2">
+                            <h2 className="text-2xl font-semibold text-white tracking-wide">{t.title}</h2>
+                            <button 
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-500 p-2 rounded-full hover:bg-white/5">
+                                <Settings size={24} />
+                            </button>
+                        </div>
+
+                        {/* PAY INPUT */}
+                        <div className="bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent hover:border-[#00d4ff]/30 transition-all duration-300 group">
+                            <div className="flex justify-between mb-3">
+                                <span className="text-gray-400 text-sm font-medium">{t.pay}</span>
+                                <span className="text-gray-400 text-xs font-mono">
+                                    {t.balance}: {payToken.balance}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center gap-4">
+                                <input
+                                    type="text"
+                                    value={payAmount}
+                                    onChange={handlePayInput}
+                                    placeholder='0'
+                                    className="bg-transparent text-3xl font-bold text-white outline-none w-full placeholder-gray-600 font-sans"
+                                />
+                                <button onClick={() => openTokenModal('pay')} className="flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg">
+                                    <img src={payToken.img} alt={payToken.symbol} className="w-6 h-6 rounded-full" />
+                                    <span className="font-bold text-white">{payToken.symbol}</span>
+                                    <ChevronDown size={16} className="text-gray-400"/>
+                                </button>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs text-gray-500">≈ ${((parseFloat(payAmount) || 0) * payToken.price).toFixed(2)}</span>
+                                <button onClick={handleMaxClick} className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-2 py-0.5 rounded hover:bg-[#00d4ff]/20 transition font-bold">Max</button>
+                            </div>
+                        </div>
+
+                        {/* SWITCH */}
+                        <div className="relative h-4 flex justify-center items-center my-2 z-10">
+                            <button onClick={handleSwapArrows} className="absolute bg-[#1a2c38] p-2 rounded-xl border-[4px] border-[#131823] hover:scale-110 hover:border-[#131823] transition-all duration-200 cursor-pointer shadow-xl hover:rotate-180">
+                                <ArrowUpDown size={20} className="text-[#00d4ff]" />
+                            </button>
+                        </div>
+
+                        {/* RECEIVE INPUT */}
+                        <div className="bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent hover:border-[#f0dfae]/30 transition-all duration-300">
+                            <div className="flex justify-between mb-3">
+                                <span className="text-gray-400 text-sm font-medium">{t.receive}</span>
+                                <span className="text-gray-400 text-xs font-mono">{t.balance}: {receiveToken.balance}</span>
+                            </div>
+                            <div className="flex justify-between items-center gap-4">
+                                <input 
+                                    type="text" 
+                                    value={receiveAmount}
+                                    onChange={handleReceiveInput}
+                                    placeholder='0'
+                                    className="bg-transparent text-3xl font-bold text-[#f0dfae] outline-none w-full placeholder-gray-600"
+                                />
+                                <button onClick={() => openTokenModal('receive')} className="flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg">
+                                    <img src={receiveToken.img} alt={receiveToken.symbol} className="w-6 h-6 rounded-full" />
+                                    <span className="font-bold text-white">{receiveToken.symbol}</span>
+                                    <ChevronDown size={16} className="text-gray-400"/>
+                                </button>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs text-gray-500">≈ ${((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2)}</span>
+                                <span className="text-xs text-green-400/90 font-mono">($0.12 {t.cheaper})</span>
+                            </div>
+                        </div>
+
+                        {/* INFO & ROUTE */}
+                        <div className="mt-4 px-4 py-3 bg-[#0a0e17]/30 rounded-2xl border border-white/5 space-y-2">
+                            <div className="flex justify-between text-sm text-gray-400">
+                                <span className="flex items-center gap-2"><Info size={14}/> {t.rate}</span>
+                                <span className="font-mono text-gray-300">1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-400">
+                                <span className="flex items-center gap-2"><Fuel size={14}/> {t.gas}</span>
+                                <span className="font-mono text-[#00d4ff]">$4.50</span>
+                            </div>
+                        </div>
+
+                        {/* MAIN BUTTON */}
+                        <button className="w-full mt-6 py-5 rounded-2xl bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] font-bold text-xl tracking-wide shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:shadow-[0_0_30px_rgba(240,223,174,0.5)] hover:scale-[1.01] transition-all active:scale-[0.98]">
+                            {t.button}
                         </button>
                     </div>
                 </div>
-
-                {/* RECEIVE BLOCK */}
-                <div className="relative group z-0">
-                    <div className="bg-[#0a0e17]/60 rounded-[2rem] p-6 border border-transparent group-hover:border-[#f0dfae]/30 transition-all duration-300 shadow-none group-hover:shadow-[0_0_40px_rgba(240,233,174,0.08)] pt-8">
-                        <div className="flex justify-between mb-4">
-                            <span className="text-gray-400 text-base font-medium">{t.receive} <span className="text-xs opacity-50">({t.estimated})</span></span>
-                        </div>
-
-                        <div className="flex justify-between items-center mb-2">
-                            <button 
-                                onClick={() => openTokenModal('receive')}
-                                className="flex items-center gap-3 bg-black/30 hover:bg-black/50 px-4 py-2 rounded-full transition-all border border-transparent hover:border-white/10 shrink-0"
-                                >
-                                <img src={receiveToken.img} alt={receiveToken.symbol} className="w-8 h-8 rounded-full shadow-lg object-contain" />
-                                <span className="text-2xl font-bold text-white">{receiveToken.symbol}</span>
-                                <ChevronDown size={20} className="text-gray-400"/>
-                            </button>
-
-                            <input 
-                                type="text" 
-                                value={receiveAmount}
-                                onChange={handleReceiveInput}
-                                placeholder='0'
-                                className="bg-transparent text-right text-5xl font-bold text-[#f0dfae] outline-none w-full placeholder-gray-600"
-                                />
-                        </div>
-
-                        <div className="flex justify-end text-xs text-green-400/90 font-mono mt-2">
-                            ($0.12 {t.cheaper})
-                        </div>
-                    </div>
-                </div>
-
-                {/* INFO */}
-                <div className="mt-6 bg-[#0a0e17]/30 rounded-2xl p-5 border border-white/5 space-y-4">
-                    <div className="flex justify-between text-sm font-medium text-gray-400">
-                        <span className="flex items-center gap-2 cursor-help hover:text-white transition-colors"><Info size={16}/> {t.rate}</span>
-                        <span className="font-mono text-gray-200 text-base">
-                            1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}
-                        </span>
-                    </div>
-                    <div className="flex justify-between text-sm font-medium text-gray-400">
-                        <span className="flex items-center gap-2 cursor-help hover:text-white transition-colors"><Fuel size={16}/> {t.gas}</span>
-                        <span className="font-mono text-[#f0dfae] flex items-center gap-2 text-base">
-                            $4.50 <span className="bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-xs font-bold">FAST</span>
-                        </span>
-                    </div>
-                </div>
-
-                {/* MAIN BUTTON */}
-                <button className="w-full mt-6 py-5 rounded-2xl bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] font-bold text-lg tracking-wide hover:shadow-[0_0_35px_rgba(240,223,174,0.3)] hover:scale-[1.01] transition-all active:scale-[0.98] active:opacity-90">
-                    {t.button}
-                </button>
             </div>
 
+            {/* MODALS */}
+
             {/* TOKEN SELECT MODAL WINDOW*/}
-            {isTokenModalOpen && (
+            {isTokenModalOpen && createPortal (
                 <div 
-                    className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-[3rem]"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                     onClick={() => setIsTokenModalOpen(false)}
                 >
                     
                     {/* MODAL WINDOW*/}
                     <div 
                         onClick={(e) => e.stopPropagation()} 
-                        className="relative w-full h-full bg-[#131823] rounded-[2.5rem] p-6 flex flex-col animate-fade-in border border-white/10 shadow-2xl"
+                        className="relative w-full max-w-md h-[80vh] bg-[#131823] rounded-[2.5rem] p-8 flex flex-col animate-fade-in border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
                     >
                         
                         {/* TITLE*/}
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-white">{t.selectToken}</h3>
-                            <button onClick={() => setIsTokenModalOpen(false)} className="text-gray-400 hover:text-white p-1 hover:bg-white/10 rounded-full">
+                            <button onClick={() => setIsTokenModalOpen(false)} className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors">
                                 <X size={24} />    
                             </button>
                         </div>
@@ -279,7 +330,7 @@ const SwapCard = ({ t }) => {
                         </div>
 
                         {/* TOKENS LIST*/}
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
                             {filteredTokens.length > 0 ? (
                                 filteredTokens.map((token) => (
                                     <div
@@ -313,23 +364,24 @@ const SwapCard = ({ t }) => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* SETTINGS MODAL */}
-            {isSettingsOpen && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-[3rem]"
+            {isSettingsOpen && createPortal (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                     onClick={() => setIsSettingsOpen(false)}
                 >
 
                     <div
                         onClick={(e) => e.stopPropagation()} 
-                        className="relative w-full max-h-[500px] bg-[#131823]/90 backdrop-blur-xl rounded-[3rem] p-8 flex flex-col animate-fade-in border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+                        className="relative w-full max-w-lg bg-[#131823]/95 backdrop-blur-xl rounded-[2.5rem] p-8 flex flex-col animate-fade-in border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
                     >
 
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-bold text-white">{t.settings.title}</h3>
-                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-white p-1 bg-white/10 rounded-full">
+                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-white p-2 bg-white/10 rounded-full transition-colors">
                                 <X size={24} />
                             </button>
                         </div>
@@ -395,7 +447,8 @@ const SwapCard = ({ t }) => {
                         </div>
 
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
