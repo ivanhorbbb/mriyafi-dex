@@ -46,7 +46,23 @@ export const translations = {
                 transactions: 'Recent Transactions',
                 colDate: 'Time',
                 colPrice: 'Price',
-                colLiq: 'Liquidity'
+                colLiq: 'Liquidity',
+                modal: {
+                    addLiquidity: 'Add Liquidity',
+                    removeLiquidity: 'Remove Liquidity',
+                    input: 'Input',
+                    balance: 'Balance',
+                    rate: 'Rate',
+                    yourLiquidity: 'Your Liquidity',
+                    amountToRemove: 'Amount to Remove ($)',
+                    supply: 'Supply',
+                    remove: 'Remove',
+                    removeInfo1: 'Removing liquidity will return',
+                    removeInfo2: 'to your wallet',
+                    shareOfPool: 'Share of Pool',
+                    insufficientBalance: 'Insufficient wallet balance!',
+                    invalidAmount: 'Invalid amount or insufficient liquidity'
+                }
             }
         }
     },
@@ -96,7 +112,23 @@ export const translations = {
                 transactions: 'Останні транзакції',
                 colDate: 'Час',
                 colPrice: 'Ціна',
-                colLiq: 'Сума'
+                colLiq: 'Сума',
+                modal: {
+                    addLiquidity: 'Додати ліквідність',
+                    removeLiquidity: 'Зняти ліквідність',
+                    input: 'Вкласти',
+                    balance: 'Баланс',
+                    rate: 'Курс',
+                    yourLiquidity: 'Ваша ліквідність',
+                    amountToRemove: 'Сума для зняття ($)',
+                    supply: 'Поповнити',
+                    remove: 'Зняти ліквідність',
+                    removeInfo1: 'Зняття ліквідності поверне',
+                    removeInfo2: 'на ваш гаманець',
+                    shareOfPool: 'Частка в пулі',
+                    insufficientBalance: 'Недостатній баланс гаманця!',
+                    invalidAmount: 'Невірна сума або недостатньо ліквідності'
+                }
             }
         }
     }

@@ -37,7 +37,7 @@ const PoolsCard = ({ t }) => {
         },
         {
             id: 3,
-            pair: 'MriyaFi / ETH',
+            pair: 'MFI / ETH',
             version: 'V3',
             imgs: [mfi, eth],
             tvl: '$55M',

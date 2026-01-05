@@ -1,15 +1,45 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Sparkles, ArrowRightLeft, Wallet, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { ArrowLeft, Sparkles, ArrowRightLeft, Wallet, X, Plus, Info } from 'lucide-react';
+
+import { TOKENS } from '../constants/tokens';
 
 const PoolDetail = ({ pool, onBack, t }) => {
 
+    const symbols = pool.pair.split(' / ');
+    const symbolA_Name = symbols[0]?.trim();
+    const symbolB_Name = symbols[1]?.trim();
+
+    const tokenA = TOKENS.find(t => t.symbol === symbolA_Name) || { balance: '0', price: 0};
+    const tokenB = TOKENS.find(t => t.symbol === symbolB_Name) || { balance: '0', price: 0};
+
+    const parseBalanceStr = (str) => parseFloat(String(str).replace(/,/g, ''));
+
     /// STATES
+    const [balanceA, setBalanceA] = useState(parseBalanceStr(tokenA.balance));
+    const [balanceB, setBalanceB] = useState(parseBalanceStr(tokenB.balance));
+
+    useEffect(() => {
+        setBalanceA(parseBalanceStr(tokenA.balance));
+        setBalanceB(parseBalanceStr(tokenB.balance));
+        /// eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pool, tokenA.balance, tokenB.balance]);
+
     const [userLiquidity, setUserLiquidity] = useState(0.00);
     const [userFees, setUserFees] = useState(12.45);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState('add');
-    const [amountInput, setAmountInput] = useState('');
+
+    const [amountA, setAmountA] = useState('');
+    const [amountB, setAmountB] = useState('');
+    const [removeAmount, setRemoveAmount] = useState('');
+
+    const priceRatio = tokenB.price !== 0 ? (tokenA.price / tokenB.price) : 0;
+
+    const primaryColor = pool.isHot ? '#f0dfae' : '#00d4ff';
+    const primaryClass = pool.isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
+    const borderClass = pool.isHot ? 'border-[#f0dfae]/30' : 'border-[#00d4ff]/30';
 
     const transactions = [
         { time: '1 min ago', price: '$125.2M', amount: '$672.20', type: 'buy'},
@@ -19,33 +49,83 @@ const PoolDetail = ({ pool, onBack, t }) => {
         { time: '35 min ago', price: '$45.1M', amount: '$890.50', type: 'sell'}
     ];
 
-    const primaryColor = pool.isHot ? '#f0dfae' : '#00d4ff';
-    const primaryClass = pool.isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
-    const borderClass = pool.isHot ? 'border-[#f0dfae]/30' : 'border-[#00d4ff]/30';
-
     /// FUNCTIONS
     const formatCurrency = (val) => {
         return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2});
     };
 
+    const formatTokenAmount = (val) => {
+        return val.toLocaleString('en-US', {maximumFractionDigits: 6});
+    };
+
     const handleOpenModal = (type) => {
         setModalType(type);
-        setAmountInput('');
+        setAmountA('');
+        setAmountB('');
+        setRemoveAmount('');
         setIsModalOpen(true);
     };
 
-    const handleConfirmTransaction = () => {
-        const val = parseFloat(amountInput);
-        if (isNaN(val) || val <= 0) return;
+    const handleAmountAChange = (e) => {
+        const val = e.target.value;
+        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+            setAmountA(val);
+            if (val && !isNaN(parseFloat(val))) {
+                setAmountB((parseFloat(val) * priceRatio).toFixed(2));
+            } else {
+                setAmountB('');
+            }
+        }
+    };
 
+    const handleAmountBChange = (e) => {
+        const val = e.target.value;
+        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+            setAmountB(val);
+            if (val && !isNaN(parseFloat(val))) {
+                setAmountA((parseFloat(val) * priceRatio).toFixed(2));
+            } else {
+                setAmountA('');
+            }
+        }
+    };
+
+    const handleConfirmTransaction = () => {
+        
         if (modalType === 'add') {
-            setUserLiquidity(prev => prev + val);
-        } else {
-            if (val > userLiquidity) {
-                alert("Insufficient liquidity balance");
+            const valA = parseFloat(amountA);
+            const valB = parseFloat(amountB);
+
+            if (!valA || !valB) return;
+
+            if (valA > balanceA || valB > balanceB) {
+                alert(`Insufficient wallet balance! You have ${formatTokenAmount(balanceA)} ${symbolA_Name} and ${formatTokenAmount(balanceB)} ${symbolB_Name}`);
                 return;
             }
-            setUserLiquidity(prev => prev - val);
+
+            setBalanceA(prev => prev - valA);
+            setBalanceB(prev => prev - valB);
+
+            const addedLiquidityValue = (valB * tokenB.price) * 2;
+            setUserLiquidity(prev => prev + addedLiquidityValue);
+
+        } else {
+
+            const valToRemove = parseFloat(removeAmount);
+            if (!valToRemove || valToRemove <= 0 || valToRemove > userLiquidity) {
+                alert("Invalid amount or insufficient liquidity");
+                return;
+            }
+
+            setUserLiquidity(prev => prev - valToRemove);
+
+            const valuePerSide = valToRemove / 2;
+            const tokensB_Returned = valuePerSide / (tokenB.price || 1);
+            const tokensA_Returned = valuePerSide / (tokenA.price || 1);
+
+            setBalanceA(prev => prev + tokensA_Returned);
+            setBalanceB(prev => prev + tokensB_Returned);
+
             setUserFees(0.00);
         }
         setIsModalOpen(false);
@@ -214,61 +294,133 @@ const PoolDetail = ({ pool, onBack, t }) => {
             </div>
 
             {/* MODAL FOR LIQUIDITY */}
-            {isModalOpen && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+            {isModalOpen && createPortal (
 
-                    {/* Backdrop */}
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    onClick={() => setIsModalOpen(false)}
+                >
+                    {/* MODAL WINDOW */}
                     <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                        onClick={() => setIsModalOpen(false)}
-                    />
-
-                    {/* Modal Window */}
-                    <div className="relative z-50 w-full max-w-md bg-[#131823] rounded-[2.5rem] p-8 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-fade-in">
-                        <div className="flex justify-between items-center mb-8">
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative w-full max-w-lg bg-[#131823] border border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.6)] p-8 flex flex-col overflow-hidden animate-fade-in"
+                    >
+                        {/* HEADER */}
+                        <div className="flex justify-between items-center mb-6">
                             <h3 className="text-2xl font-bold text-white">
-                                {modalType === 'add' ? t.add : t.remove}
+                                {modalType === 'add' ? t.modal.addLiquidity : t.modal.removeLiquidity}
                             </h3>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
-                            >
-                                <X size={24}/>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-ful transition-colors">
+                                <X size={24} />
                             </button>
                         </div>
 
-                        <div className="mb-8">
-                            <div className="flex justify-between text-sm text-gray-400 mb-2">
-                                <span>Amount</span>
-                                <span>Balance: {formatCurrency(modalType === 'add' ? 25000 : userLiquidity)}</span>
-                            </div>
-                            <div className="relative">
-                                <input 
-                                    type="number" 
-                                    placeholder='0.00'
-                                    autoFocus
-                                    value={amountInput}
-                                    onChange={(e) => setAmountInput(e.target.value)}
-                                    className="w-full bg-[#0a0e17] border border-white/10 rounded-2xl py-4 pl-4 pr-16 text-2xl text-white font-mono placeholder-gray-600 focus:outline-none focus:border-[#00d4ff]"
-                                />
-                                <span className="absolute right-4 top-1/2 -translate-1/2 text-gray-500 font-bold">USD</span>
-                            </div>
-                        </div>
+                        {/* ADD LIQUIDITY */}
+                        {modalType === 'add' ? (
+                            <div className="space-y-4">
+                                {/* Token A */}
+                                <div className="bg-[#0a0e17]/60 p-4 rounded-2xl border border-white/5 hover:border-[#00d4ff]/30 transition-colors">
+                                    <div className="flex justify-between text-sm text-gray-400 mb-2">
+                                        <span>{t.modal.input}</span>
+                                        <span>{t.modal.balance}: {formatTokenAmount(balanceA)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <input 
+                                            type="text"
+                                            value={amountA}
+                                            onChange={handleAmountAChange}
+                                            placeholder="0.0"
+                                            className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-gray-600"
+                                        />
+                                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full border border-white/10 shrink-0">
+                                            <img src={pool.imgs[0]} alt="" className="w-7 h-7 rounded-full" />
+                                            <span className="font-bold text-white text-lg">{symbolA_Name}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
+                                {/* Plus Icon */}
+                                <div className="flex justify-center -my-2 relative z-10">
+                                    <div className="bg-[#1a2c38] p-2 rounded-xl border-4 border-[#131823]">
+                                        <Plus size={20} className="text-gray-400" />
+                                    </div>
+                                </div>
+
+                                {/* Token B */}
+                                <div className="bg-[#0a0e17]/60 p-4 rounded-2xl border border-white/5 hover:border-[#00d4ff]/30 transition-colors">
+                                    <div className="flex justify-between text-sm text-gray-400 mb-2">
+                                        <span>{t.modal.input}</span>
+                                        <span>{t.modal.balance}: {formatTokenAmount(balanceB)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <input 
+                                            type="text"
+                                            value={amountB}
+                                            onChange={handleAmountBChange}
+                                            placeholder="0.0"
+                                            className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-gray-600"
+                                        />
+                                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full border border-white/10 shrink-0">
+                                            <img src={pool.imgs[1]} alt="" className="w-7 h-7 rounded-full" />
+                                            <span className="font-bold text-white text-lg">{symbolB_Name}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="mt-4 p-4 bg-white/5 rounded-2xl text-sm space-y-2">
+                                    <div className="flex justify-between text-gray-400">
+                                        <span>{t.modal.rate}</span>
+                                        <span className="text-white font-mono">1 {symbolA_Name} = {priceRatio.toLocaleString()} {symbolB_Name}</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-400">
+                                        <span>{t.modal.shareOfPool}</span>
+                                        <span className="text-[#00d4ff] font-bold">&lt; 0.01%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="p-4 bg-white/5 rounded-2xl text-center">
+                                    <span className="text-gray-400 text-sm block mb-1">{t.modal.yourLiquidity}</span>
+                                    <span className="text-3xl font-bold text-white">{formatCurrency(userLiquidity)}</span>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm text-gray-400">
+                                        <span>{t.modal.amountToRemove}</span>
+                                        <span className="text-[#00d4ff] cursor-pointer" onClick={() => setRemoveAmount(userLiquidity.toString())}>Max</span>
+                                    </div>
+                                    <input 
+                                        type="number"
+                                        value={removeAmount}
+                                        onChange={(e) => setRemoveAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-[#0a0e17]/60 border border-white/10 rounded-2xl py-4 px-4 text-2xl text-white font-mono placeholder-gray-600 focus:outline-none focus:border-[#00d4ff]"
+                                    />
+                                </div>
+                                <div className="text-xs text-gray-500 text-center">
+                                    {t.modal.removeInfo1} {symbolA_Name} + {symbolB_Name} {t.modal.removeInfo2}.
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ACTION BUTTON */}
                         <button
                             onClick={handleConfirmTransaction}
                             className={`
-                                w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg
-                                ${modalType == 'add'
-                                    ? 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:scale-[1.02]'
-                                    : 'bg-[#1a2c38] text-white border border-[#00d4ff]/30 hover:border-[#00d4ff] hover:bg-[#00d4ff]/10'
+                                w-full mt-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg
+                                ${modalType === 'add'
+                                    ? 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:scale-[1.02] shadow-[0_0_20px_rgba(240,223,174,0.2)]'
+                                    : 'bg-[#1a2c38] text-white border border-[#00d4ff]/30 hover:border-[#00d4ff] hover:bg-[#00d4ff]/10 hover:shadow-[0_0_20px_rgba(0,212,255,0.2)]'
                                 }
                             `}
                         >
-                            Confirm {modalType === 'add' ? 'Deposit' : 'Withdrawal'}
+                            {modalType === 'add' ? t.modal.supply : t.modal.remove}
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

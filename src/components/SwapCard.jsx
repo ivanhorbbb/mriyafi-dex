@@ -2,57 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
 
-import eth from '../assets/img/tokens/eth.png';
-import usdc from '../assets/img/tokens/usdc.png';
-import usdt from '../assets/img/tokens/usdt.png';
-import wbtc from '../assets/img/tokens/wrapped-btc.png';
-import weth from '../assets/img/tokens/wrapped-eth.png';
-import mfi from '../assets/img/tokens/mfi.png';
+import { TOKENS } from '../constants/tokens';
 
 const SwapCard = ({ t }) => {
 
-    const tokensList = [
-        { symbol: 'ETH', name: 'Ethereum', img: eth, balance: '2.5', price: 2450.50 },
-        { symbol: 'USDC', name: 'USD Coin', img: usdc, balance: '4500', price: 1.00 },
-        { symbol: 'USDT', name: 'Tether', img: usdt, balance: '3,500.25', price: 1.00 },
-        { symbol: 'WBTC', name: 'Wrapped Bitcoin', img: wbtc, balance: '0.05', price: 98500.00 },
-        { symbol: 'WETH', name: 'Wrapped Ethereum', img: weth, balance: '2.1', price: 2450.50 },
-        { symbol: 'MFI', name: 'Mriya Finance', img: mfi, balance: '10,000', price: 0.05 }
-    ];
+    const [tokens] = useState(TOKENS);
 
     // STATES
-    const [payToken, setPayToken] = useState(tokensList[0]);
-    const [receiveToken, setReceiveToken] = useState(tokensList[1]);
+    const [paySymbol, setPaySymbol] = useState('ETH');
+    const [receiveSymbol, setReceiveSymbol] = useState('USDC');
+
+    const payToken = tokens.find(t => t.symbol === paySymbol) || tokens[0];
+    const receiveToken = tokens.find(t => t.symbol === receiveSymbol) || tokens[1];
+
     const [payAmount, setPayAmount] = useState('1.5');
     const [receiveAmount, setReceiveAmount] = useState('');
 
     const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
     const [tokenModalType, setTokenModalType] = useState('pay');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
     const [searchQuery, setSearchQuery] = useState('');
+
     const [slippage, setSlippage] = useState(0.5);
     const [deadline, setDeadline] = useState(20);
-
     const [timeframe, setTimeframe] = useState('1D');
 
     const exchangeRate = payToken.price / receiveToken.price;
 
-    const filteredTokens = tokensList.filter((token) => 
+    const filteredTokens = tokens.filter((token) => 
         token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const parseBalance = (val) => {
+        if (!val) return 0;
+        const num = parseFloat(String(val).replace(/,/g, ''));
+        return isNaN(num) ? 0 : num;
+    };
+
     useEffect(() => {
-        if (payAmount) {
+        if (payAmount && !isNaN(parseFloat(payAmount))) {
             const val = parseFloat(payAmount);
-            if (!isNaN(val)) {
-                const calculated = (val * exchangeRate).toFixed(6);
-                setReceiveAmount(parseFloat(calculated).toString());
-            }
+            const calculated = (val * exchangeRate).toFixed(6);
+            setReceiveAmount(parseFloat(calculated).toString());
+        } else {
+            setReceiveAmount('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [payToken, receiveToken]);
+    }, [paySymbol, receiveSymbol, payToken, receiveToken, payAmount]);
 
     // FUNCTIONS
 
@@ -97,35 +94,50 @@ const SwapCard = ({ t }) => {
     // 4.Swap Tokens
     const handleSwapArrows = () => {
         const temp = payToken;
-        setPayToken(receiveToken);
-        setReceiveToken(temp);
-        const tempAmount = payAmount; 
-        if (tempAmount && !isNaN(tempAmount)) {
-             const result = (parseFloat(tempAmount) * (receiveToken.price / payToken.price)).toFixed(6);
-             setReceiveAmount(parseFloat(result).toString());
+        setPaySymbol(receiveSymbol);
+        setReceiveSymbol(temp);
+
+        const currentPay = parseFloat(payAmount); 
+        if (!isNaN(currentPay)) {
+            const newRate = receiveToken.price / payToken.price;
+            const newReceive = (currentPay * newRate).toFixed(6);
+            setReceiveAmount(parseFloat(newReceive).toString());
         }
     };
 
-    // 5. Open Tokens List
+    // 5. SWAP
+    const handleSwap = () => {
+        console.log(`Swapping ${payAmount} ${paySymbol} to ${receiveAmount} ${receiveSymbol}`);
+        alert("Swap functionality will be connected to Smart Contracts.");
+    };
+
+    // 6. Open Tokens List
     const openTokenModal = (type) => {
         setTokenModalType(type);
         setSearchQuery('');
         setIsTokenModalOpen(true);
     };
 
-    // 6. Select Token
+    // 7. Select Token
     const selectToken = (token) => {
         if (tokenModalType === 'pay') {
-            if (token.symbol === receiveToken.symbol) setReceiveToken(payToken);
-            setPayToken(token);
-            setPayAmount('');
-            setReceiveAmount('');
+            if (token.symbol === receiveSymbol) setReceiveSymbol(paySymbol);
+            setPaySymbol(token.symbol);
         } else {
-            if (token.symbol === payToken.symbol) setPayToken(receiveToken);
-            setReceiveToken(token);
+            if (token.symbol === paySymbol) setPaySymbol(receiveSymbol);
+            setReceiveSymbol(token.symbol);
         }
+        setPayAmount('');
+        setReceiveAmount('');
         setIsTokenModalOpen(false);
     };
+
+    const isInsufficientBalance = parseFloat(payAmount) > parseBalance(payToken.balance);
+    const isEnterAmount = !payAmount || parseFloat(payAmount) < 0;
+
+    let buttonText = t.button;
+    if (isEnterAmount) buttonText = "Enter Amount";
+    else if (isInsufficientBalance) buttonText = "Insufficient Balance";
 
     return(
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
@@ -287,8 +299,12 @@ const SwapCard = ({ t }) => {
                         </div>
 
                         {/* MAIN BUTTON */}
-                        <button className="w-full mt-6 py-5 rounded-2xl bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] font-bold text-xl tracking-wide shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:shadow-[0_0_30px_rgba(240,223,174,0.5)] hover:scale-[1.01] transition-all active:scale-[0.98]">
-                            {t.button}
+                        <button 
+                            onClick={handleSwap}
+                            disabled={isInsufficientBalance || isEnterAmount}
+                            className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:scale-[1.01] active:scale-[0.98]'}`}
+                            >
+                            {buttonText}
                         </button>
                     </div>
                 </div>
