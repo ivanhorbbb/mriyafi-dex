@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
 
 import { TOKENS } from '../constants/tokens';
@@ -93,9 +94,9 @@ const SwapCard = ({ t }) => {
 
     // 4.Swap Tokens
     const handleSwapArrows = () => {
-        const temp = payToken;
+        const tempSymbol = paySymbol;
         setPaySymbol(receiveSymbol);
-        setReceiveSymbol(temp);
+        setReceiveSymbol(tempSymbol);
 
         const currentPay = parseFloat(payAmount); 
         if (!isNaN(currentPay)) {
@@ -150,43 +151,56 @@ const SwapCard = ({ t }) => {
                         relative w-full h-full min-h-[550px] 
                         rounded-[3rem] border border-white/10 
                         bg-[#131823]/80 backdrop-blur-2xl shadow-2xl
-                        p-8 flex flex-col overflow-hidden
+                        flex flex-col overflow-hidden
                     ">
                         {/* Header */}
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="flex -space-x-2">
-                                    <img src={payToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
-                                    <img src={receiveToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
-                                </div>
-                                <div>
-                                    <div className="flex items-baseline gap-3">
-                                        <h2 className="text-2xl font-bold text-white">{payToken.symbol} / {receiveToken.symbol}</h2>
-                                        <span className="text-lg font-mono font-bold text-[#00d4ff]">+5.24%</span>
+                        <div className="p-8 pb-0 flex flex-col z-10">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex -space-x-2">
+                                        <img src={payToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
+                                        <img src={receiveToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
                                     </div>
-                                    <div className="text-gray-400 text-sm font-medium">
-                                        1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}
+                                    <div>
+                                        <div className="flex items-baseline gap-3">
+                                            <h2 className="text-2xl font-bold text-white">{payToken.symbol} / {receiveToken.symbol}</h2>
+                                            <span className="text-lg font-mono font-bold text-[#00d4ff]">+5.24%</span>
+                                        </div>
+                                        <div className="text-gray-400 text-sm font-medium">
+                                            1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Timeframe */}
-                            <div className="flex bg-[#0a0e17]/50 p-1 rounded-xl border border-white/5">
-                                {['1H', '1D', '1W', '1M', '1Y'].map((tf) => (
-                                    <button 
-                                        key={tf}
-                                        onClick={() => setTimeframe(tf)}
-                                        className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${timeframe === tf ? 'bg-[#1a2c38] text-[#00d4ff] shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        {tf}
-                                    </button>
-                                ))}
+                                {/* Timeframe */}
+                                <div className="flex bg-[#0a0e17]/50 p-1 rounded-xl border border-white/5">
+                                    {['1H', '1D', '1W', '1M', '1Y'].map((tf) => (
+                                        <button 
+                                            key={tf}
+                                            onClick={() => setTimeframe(tf)}
+                                            className='relative px-4 py-1.5 rounded-lg text-sm font-bold outline-none'
+                                        >
+                                            {timeframe === tf && (
+                                                <motion.div
+                                                    layoutId='active-pill'
+                                                    className="absolute inset-0 bg-[#1a2c38] rounded-lg border border-white/10 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                                />
+                                            )}
+                                            <span className={`relative z-10 transition-colors duration-200 ${
+                                                timeframe === tf ? 'text-[#00d4ff]' : 'text-gray-500 hover:text-gray-300'
+                                            }`}>
+                                                {tf}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
                         {/* SVG Chart Mock */}
-                        <div className="flex-grow relative w-full min-h-[300px]">
-                            <svg viewBox="0 0 800 300" className="w-full h-full preserve-3d" preserveAspectRatio="none">
+                        <div className="flex-grow relative w-full mt-auto">
+                            <svg viewBox="0 0 800 300" className="w-full h-full preserve-3d absolute bottom-0" preserveAspectRatio="none">
                                 <defs>
                                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
@@ -194,9 +208,9 @@ const SwapCard = ({ t }) => {
                                     </linearGradient>
                                 </defs>
                                 {/* Grid */}
-                                <line x1="0" y1="50" x2="800" y2="50" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
-                                <line x1="0" y1="150" x2="800" y2="150" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
-                                <line x1="0" y1="250" x2="800" y2="250" stroke="white" strokeOpacity="0.05" strokeDasharray="4 4" />
+                                <line x1="0" y1="50" x2="800" y2="50" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+                                <line x1="0" y1="150" x2="800" y2="150" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
+                                <line x1="0" y1="250" x2="800" y2="250" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
                                 {/* Path */}
                                 <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60" fill="none" stroke="#00d4ff" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                                 <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60 V 300 H 0 Z" fill="url(#chartGradient)" stroke="none" />
@@ -346,7 +360,7 @@ const SwapCard = ({ t }) => {
                         </div>
 
                         {/* TOKENS LIST*/}
-                        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                             {filteredTokens.length > 0 ? (
                                 filteredTokens.map((token) => (
                                     <div

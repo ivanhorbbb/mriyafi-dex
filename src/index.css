@@ -14,3 +14,9 @@ body {
 .glass-panel {
   @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl;
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

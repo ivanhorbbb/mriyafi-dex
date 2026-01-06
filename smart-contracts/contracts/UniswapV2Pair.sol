@@ -81,7 +81,7 @@ contract UniswapV2Pair is ERC20, ReentrancyGuard {
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
             liquidity = Math.sqrt(amount0 * amount1) - MINIMUM_LIQUIDITY;
-            _mint(address(0), MINIMUM_LIQUIDITY);
+            _mint(address(0xdEaD), MINIMUM_LIQUIDITY);
         } else {
             liquidity = Math.min(
                 (amount0 * _totalSupply) / _reserve0,
