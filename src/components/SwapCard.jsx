@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatedNumber, ShimmerButton, AnimatedChart, FocusGlowInput, AnimatedText, AnimatedIcon } from './Animations';
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
 
@@ -140,6 +141,9 @@ const SwapCard = ({ t }) => {
     if (isEnterAmount) buttonText = "Enter Amount";
     else if (isInsufficientBalance) buttonText = "Insufficient Balance";
 
+    const payUsdValue = ((parseFloat(payAmount) || 0) * payToken.price).toFixed(2);
+    const receiveUsdValue = ((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2);
+
     return(
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
             
@@ -158,16 +162,36 @@ const SwapCard = ({ t }) => {
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                                 <div className="flex items-center gap-4">
                                     <div className="flex -space-x-2">
-                                        <img src={payToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
-                                        <img src={receiveToken.img} alt="" className="w-10 h-10 rounded-full border-2 border-[#131823]" />
+                                        <AnimatedIcon 
+                                            src={payToken.img} 
+                                            alt={payToken.symbol} 
+                                            className="w-10 h-10 border-2 border-[#131823] z-10 bg-[#131823]" 
+                                        />
+                                        <AnimatedIcon 
+                                            src={receiveToken.img} 
+                                            alt={receiveToken.symbol} 
+                                            className="w-10 h-10 border-2 border-[#131823] z-0 bg-[#131823]" 
+                                        />
                                     </div>
                                     <div>
                                         <div className="flex items-baseline gap-3">
-                                            <h2 className="text-2xl font-bold text-white">{payToken.symbol} / {receiveToken.symbol}</h2>
-                                            <span className="text-lg font-mono font-bold text-[#00d4ff]">+5.24%</span>
+                                            <h2 className="text-2xl font-bold text-white">
+                                                <AnimatedText content={`${payToken.symbol} / ${receiveToken.symbol}`} />
+                                            </h2>
+                                            <span className="text-lg font-mono font-bold text-[#00d4ff]">
+                                                <AnimatedNumber 
+                                                    value={payToken.symbol === 'ETH' ? "5.24" : "2.85"} 
+                                                    prefix="+" 
+                                                    suffix="%" 
+                                                />
+                                            </span>
                                         </div>
-                                        <div className="text-gray-400 text-sm font-medium">
-                                            1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}
+                                        <div className="text-gray-400 text-sm font-medium flex gap-1">
+                                            <span>1 {payToken.symbol} = </span>
+                                            <AnimatedNumber 
+                                                value={exchangeRate.toFixed(4)} 
+                                                suffix={` ${receiveToken.symbol}`}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -200,21 +224,7 @@ const SwapCard = ({ t }) => {
 
                         {/* SVG Chart Mock */}
                         <div className="flex-grow relative w-full mt-auto">
-                            <svg viewBox="0 0 800 300" className="w-full h-full preserve-3d absolute bottom-0" preserveAspectRatio="none">
-                                <defs>
-                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.3" />
-                                        <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
-                                    </linearGradient>
-                                </defs>
-                                {/* Grid */}
-                                <line x1="0" y1="50" x2="800" y2="50" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
-                                <line x1="0" y1="150" x2="800" y2="150" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
-                                <line x1="0" y1="250" x2="800" y2="250" stroke="white" strokeOpacity="0.03" strokeDasharray="4 4" />
-                                {/* Path */}
-                                <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60" fill="none" stroke="#00d4ff" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                                <path d="M0 200 C 100 200, 150 100, 250 150 S 350 250, 450 180 S 550 50, 650 100 S 750 20, 800 60 V 300 H 0 Z" fill="url(#chartGradient)" stroke="none" />
-                            </svg>
+                            <AnimatedChart timeframe={timeframe} />
                         </div>
                         
                         {/* Chart Glow */}
@@ -240,11 +250,11 @@ const SwapCard = ({ t }) => {
                         </div>
 
                         {/* PAY INPUT */}
-                        <div className="bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent hover:border-[#00d4ff]/30 transition-all duration-300 group">
+                        <FocusGlowInput>
                             <div className="flex justify-between mb-3">
                                 <span className="text-gray-400 text-sm font-medium">{t.pay}</span>
-                                <span className="text-gray-400 text-xs font-mono">
-                                    {t.balance}: {payToken.balance}
+                                <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
+                                    {t.balance}: <AnimatedNumber value={payToken.balance} />
                                 </span>
                             </div>
                             <div className="flex justify-between items-center gap-4">
@@ -255,17 +265,21 @@ const SwapCard = ({ t }) => {
                                     placeholder='0'
                                     className="bg-transparent text-3xl font-bold text-white outline-none w-full placeholder-gray-600 font-sans"
                                 />
-                                <button onClick={() => openTokenModal('pay')} className="flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg">
-                                    <img src={payToken.img} alt={payToken.symbol} className="w-6 h-6 rounded-full" />
-                                    <span className="font-bold text-white">{payToken.symbol}</span>
-                                    <ChevronDown size={16} className="text-gray-400"/>
+                                <button onClick={() => openTokenModal('pay')} className="group flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg active:scale-95">
+                                    <AnimatedIcon src={payToken.img} alt={payToken.symbol} className="w-6 h-6" />
+                                    <span className="font-bold text-white">
+                                        <AnimatedText content={payToken.symbol} />
+                                    </span>
+                                    <ChevronDown size={16} className="text-gray-400 group-hover:text-white transition-colors"/>
                                 </button>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs text-gray-500">≈ ${((parseFloat(payAmount) || 0) * payToken.price).toFixed(2)}</span>
+                                <span className="text-xs text-gray-500 flex gap-1">
+                                    ≈ $<AnimatedNumber value={payUsdValue} />
+                                </span>
                                 <button onClick={handleMaxClick} className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-2 py-0.5 rounded hover:bg-[#00d4ff]/20 transition font-bold">Max</button>
                             </div>
-                        </div>
+                        </FocusGlowInput>
 
                         {/* SWITCH */}
                         <div className="relative h-4 flex justify-center items-center my-2 z-10">
@@ -278,7 +292,9 @@ const SwapCard = ({ t }) => {
                         <div className="bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent hover:border-[#f0dfae]/30 transition-all duration-300">
                             <div className="flex justify-between mb-3">
                                 <span className="text-gray-400 text-sm font-medium">{t.receive}</span>
-                                <span className="text-gray-400 text-xs font-mono">{t.balance}: {receiveToken.balance}</span>
+                                <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
+                                    {t.balance}: <AnimatedNumber value={receiveToken.balance} />
+                                </span>
                             </div>
                             <div className="flex justify-between items-center gap-4">
                                 <input 
@@ -288,15 +304,21 @@ const SwapCard = ({ t }) => {
                                     placeholder='0'
                                     className="bg-transparent text-3xl font-bold text-[#f0dfae] outline-none w-full placeholder-gray-600"
                                 />
-                                <button onClick={() => openTokenModal('receive')} className="flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg">
-                                    <img src={receiveToken.img} alt={receiveToken.symbol} className="w-6 h-6 rounded-full" />
-                                    <span className="font-bold text-white">{receiveToken.symbol}</span>
-                                    <ChevronDown size={16} className="text-gray-400"/>
+                                <button onClick={() => openTokenModal('receive')} className="group flex items-center gap-2 bg-[#1a2c38] hover:bg-[#233545] px-3 py-1.5 rounded-full transition-all border border-white/10 shrink-0 shadow-lg active:scale-95">
+                                    <AnimatedIcon src={receiveToken.img} alt={receiveToken.symbol} className="w-6 h-6" />
+                                    <span className="font-bold text-white">
+                                        <AnimatedText content={receiveToken.symbol} />
+                                    </span>
+                                    <ChevronDown size={16} className="text-gray-400 group-hover:text-white transition-colors"/>
                                 </button>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs text-gray-500">≈ ${((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2)}</span>
-                                <span className="text-xs text-green-400/90 font-mono">($0.12 {t.cheaper})</span>
+                                <span className="text-xs text-gray-500 flex gap-1">
+                                    ≈ $<AnimatedNumber value={receiveUsdValue} />
+                                </span>
+                                <span className="text-xs text-green-400/90 font-mono flex gap-1">
+                                    ($<AnimatedNumber value="0.12" /> {t.cheaper})
+                                </span>
                             </div>
                         </div>
 
@@ -304,22 +326,28 @@ const SwapCard = ({ t }) => {
                         <div className="mt-4 px-4 py-3 bg-[#0a0e17]/30 rounded-2xl border border-white/5 space-y-2">
                             <div className="flex justify-between text-sm text-gray-400">
                                 <span className="flex items-center gap-2"><Info size={14}/> {t.rate}</span>
-                                <span className="font-mono text-gray-300">1 {payToken.symbol} = {exchangeRate.toFixed(4)} {receiveToken.symbol}</span>
+                                <span className="font-mono text-gray-300 flex items-center gap-1">
+                                    1 <AnimatedText content={payToken.symbol} /> = 
+                                    <AnimatedNumber value={exchangeRate.toFixed(4)} /> 
+                                    <AnimatedText content={receiveToken.symbol} />
+                                </span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-400">
                                 <span className="flex items-center gap-2"><Fuel size={14}/> {t.gas}</span>
-                                <span className="font-mono text-[#00d4ff]">$4.50</span>
+                                <span className="font-mono text-[#00d4ff] flex items-center">
+                                    $<AnimatedNumber value="4.50" />
+                                </span>
                             </div>
                         </div>
 
                         {/* MAIN BUTTON */}
-                        <button 
+                        <ShimmerButton 
                             onClick={handleSwap}
                             disabled={isInsufficientBalance || isEnterAmount}
                             className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:scale-[1.01] active:scale-[0.98]'}`}
                             >
                             {buttonText}
-                        </button>
+                        </ShimmerButton>
                     </div>
                 </div>
             </div>
