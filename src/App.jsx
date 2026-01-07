@@ -1,8 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { ethers } from 'ethers';
 import Header from './components/Header';
 import SwapCard from './components/SwapCard';
 import PoolsCard from './components/PoolsCard';
 import { translations } from './translations';
+
+import { useTokenBalances } from './hooks/useTokenBalances';
 
 const Earn = ({ t }) => (
     <div className="glass-panel p-10 rounded-3xl max-w-3xl w-full text-center animate-fade-in border border-white/10 bg-[#131823]/60 backdrop-blur-xl">
@@ -12,6 +15,62 @@ const Earn = ({ t }) => (
 );
 
 function App() {
+  const [account, setAccount] = useState(null);
+  const [provider, setProvider] = useState(null);
+
+  const { balances } = useTokenBalances(provider, account);
+
+  const connectWallet = async () => {
+    if (window.ethereum) { 
+      try {
+        const newProvider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await newProvider.send("eth_requestAccounts", []);
+        setAccount(accounts[0]);
+        setProvider(newProvider);
+      } catch (error) {
+        console.error("User rejected request:", error);
+      }
+    } else {
+      alert("Please install MetaMask to use this app!");
+    }
+  };
+
+  useEffect(() => {
+    const silentCheck = async () => {
+    if (window.ethereum) {
+        try {
+            const accounts = await window.ethereum.request({ method: "eth_accounts" });
+
+            if (accounts.length > 0) {
+                setAccount(accounts[0]);
+                setProvider(new ethers.BrowserProvider(window.ethereum));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+  }
+
+  silentCheck();
+
+    if (window.ethereum) {
+      const handleAccountsChanged = (accounts) => {
+          if (accounts.length > 0) {
+              setAccount(accounts[0]);
+              setProvider(new ethers.BrowserProvider(window.ethereum));
+          } else {
+              setAccount(null);
+              setProvider(null);
+          }
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      };
+    }
+  }, []);
   
   const [activeTab, setActiveTab] = useState('swap');
   const [lang, setLang] = useState('en');
@@ -25,10 +84,10 @@ function App() {
   
   const renderContent = () => {
     switch(activeTab) {
-      case 'swap': return <SwapCard t={t.swap} />;
+      case 'swap': return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} />;
       case 'pools': return <PoolsCard t={t.pools} />;
       case 'earn': return <Earn t={t} />;
-      default: return <SwapCard t={t.swap} />;
+      default: return <SwapCard t={t.swap} account={account} balances={balances}/>;
     }
   };
 
@@ -47,6 +106,8 @@ function App() {
             lang={lang}
             toggleLang={toggleLang}
             t={t.nav}
+            account={account}
+            connectWallet={connectWallet}
         />
         
         <main className="flex-grow flex flex-col items-center justify-center p-6 mt-16 md:scale-110 transition-transform duration-500 origin-center">

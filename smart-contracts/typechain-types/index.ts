@@ -40,6 +40,8 @@ export type { MockWETH } from "./contracts/MockTokens.sol/MockWETH";
 export { MockWETH__factory } from "./factories/contracts/MockTokens.sol/MockWETH__factory";
 export type { MriyaFiToken } from "./contracts/MriyaFiToken";
 export { MriyaFiToken__factory } from "./factories/contracts/MriyaFiToken__factory";
+export type { Multicall } from "./contracts/Multicall";
+export { Multicall__factory } from "./factories/contracts/Multicall__factory";
 export type { UniswapV2Factory } from "./contracts/UniswapV2Factory";
 export { UniswapV2Factory__factory } from "./factories/contracts/UniswapV2Factory__factory";
 export type { UniswapV2Pair } from "./contracts/UniswapV2Pair";

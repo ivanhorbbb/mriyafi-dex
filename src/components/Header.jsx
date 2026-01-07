@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logoImg from '../assets/img/brand/logo.png'; 
 
-const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
+const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connectWallet }) => {
+
+    const formatAddress = (addr) => {
+        return addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}` : '';
+    };
 
     const tabsRef = useRef({});
 
@@ -104,11 +108,19 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t }) => {
                         <span className="text-gray-600">]</span>
                     </button>
 
-                    <div className="text-gray-200 bg-white/5 px-5 py-2.5 rounded-xl border border-white/5 hover:border-white/20 hover:bg-white/10 cursor-pointer transition-all flex items-center gap-3 shadow-lg">
-                        <span className="text-[#00d4ff] font-bold text-base">0.05 ETH</span>
-                        <span className="text-gray-600">|</span>
-                        <span className="opacity-70">0xab4...8c</span>
-                    </div>
+                    {/* CONNECT WALLET */}
+                    <button
+                        onClick={connectWallet}
+                        className={`
+                            px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg
+                            ${account 
+                                ? 'bg-[#1a2c38] text-[#00d4ff] border border-[#00d4ff]/30 cursor-default' 
+                                : 'bg-gradient-to-r from-[#00d4ff] to-[#0066ff] text-white hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:scale-105 active:scale-95'
+                            }
+                        `}
+                    >
+                        {account ? formatAddress(account) : t.connect}
+                    </button>
                 </div>
             </div>
         </div>

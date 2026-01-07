@@ -82,6 +82,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MriyaFiToken__factory>;
     getContractFactory(
+      name: "Multicall",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Multicall__factory>;
+    getContractFactory(
       name: "UniswapV2Factory",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.UniswapV2Factory__factory>;
@@ -184,6 +188,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.MriyaFiToken>;
     getContractAt(
+      name: "Multicall",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Multicall>;
+    getContractAt(
       name: "UniswapV2Factory",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -273,6 +282,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MriyaFiToken>;
     deployContract(
+      name: "Multicall",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Multicall>;
+    deployContract(
       name: "UniswapV2Factory",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.UniswapV2Factory>;
@@ -374,6 +387,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.MriyaFiToken>;
+    deployContract(
+      name: "Multicall",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Multicall>;
     deployContract(
       name: "UniswapV2Factory",
       args: any[],

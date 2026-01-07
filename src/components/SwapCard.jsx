@@ -1,57 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { ethers } from 'ethers';
 import { AnimatedNumber, ShimmerButton, AnimatedChart, FocusGlowInput, AnimatedText, AnimatedIcon } from './Animations';
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
 
 import { TOKENS } from '../constants/tokens';
+import { useSwap } from '../hooks/useSwap';
 
-const SwapCard = ({ t }) => {
-
-    const [tokens] = useState(TOKENS);
+const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
     // STATES
-    const [paySymbol, setPaySymbol] = useState('ETH');
+    const [tokens] = useState(TOKENS);
+    const [paySymbol, setPaySymbol] = useState('MFI');
     const [receiveSymbol, setReceiveSymbol] = useState('USDC');
 
     const payToken = tokens.find(t => t.symbol === paySymbol) || tokens[0];
     const receiveToken = tokens.find(t => t.symbol === receiveSymbol) || tokens[1];
 
-    const [payAmount, setPayAmount] = useState('1.5');
+    const [payAmount, setPayAmount] = useState('');
     const [receiveAmount, setReceiveAmount] = useState('');
+    const [isSwapping, setIsSwapping] = useState(false);
 
     const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
     const [tokenModalType, setTokenModalType] = useState('pay');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-
     const [slippage, setSlippage] = useState(0.5);
     const [deadline, setDeadline] = useState(20);
     const [timeframe, setTimeframe] = useState('1D');
 
-    const exchangeRate = payToken.price / receiveToken.price;
+    const { getAmountsOut, swapTokens } = useSwap(provider, account);
+
+    const getTokenBalance = (symbol) => {
+        if (!balances) return "0.0";
+        return balances[symbol] || "0.0";
+    };
 
     const filteredTokens = tokens.filter((token) => 
         token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const parseBalance = (val) => {
-        if (!val) return 0;
-        const num = parseFloat(String(val).replace(/,/g, ''));
-        return isNaN(num) ? 0 : num;
-    };
-
     useEffect(() => {
-        if (payAmount && !isNaN(parseFloat(payAmount))) {
-            const val = parseFloat(payAmount);
-            const calculated = (val * exchangeRate).toFixed(6);
-            setReceiveAmount(parseFloat(calculated).toString());
-        } else {
-            setReceiveAmount('');
-        }
+        const fetchPrice = async () => {
+            if (!payAmount || isNaN(parseFloat(payAmount)) || parseFloat(payAmount) === 0) {
+                setReceiveAmount('');
+                return;
+            }
+
+            const path = [payToken.address, receiveToken.address];
+
+            try {
+                const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
+
+                const amountOutWei = await getAmountsOut(amountInWei, path);
+
+                const formattedOut = ethers.formatUnits(amountOutWei, receiveToken.decimals);
+
+                setReceiveAmount(parseFloat(formattedOut).toFixed(6));
+            } catch (e) {
+                console.error("Price fetch error", e);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            fetchPrice();
+        }, 500);
+
+        return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [paySymbol, receiveSymbol, payToken, receiveToken, payAmount]);
+    }, [payAmount, payToken, receiveToken, getAmountsOut]);
 
     // FUNCTIONS
 
@@ -60,12 +79,6 @@ const SwapCard = ({ t }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setPayAmount(value);
-            if (value && !isNaN(value)) {
-                const result = (parseFloat(value) * exchangeRate).toFixed(6);
-                setReceiveAmount(parseFloat(result).toString());
-            } else {
-                setReceiveAmount('');
-            }
         }
     }
 
@@ -74,23 +87,14 @@ const SwapCard = ({ t }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setReceiveAmount(value);
-            if (value && !isNaN(value)) {
-                const result = (parseFloat(value) / exchangeRate).toFixed(6);
-                setPayAmount(parseFloat(result).toString());
-            } else {
-                setPayAmount('');
-            }
         }
     }
 
     // 3. MAX Button
     const handleMaxClick = () => {
-        const cleanBalance = payToken.balance.replace(/,/g, '');
+        const balance = getTokenBalance(payToken.symbol);
+        const cleanBalance = balance.replace(/,/g, '');
         setPayAmount(cleanBalance);
-        if (cleanBalance && !isNaN(cleanBalance)) {
-            const result = (parseFloat(cleanBalance) * exchangeRate).toFixed(6);
-            setReceiveAmount(parseFloat(result).toString());
-        }
     };
 
     // 4.Swap Tokens
@@ -98,19 +102,40 @@ const SwapCard = ({ t }) => {
         const tempSymbol = paySymbol;
         setPaySymbol(receiveSymbol);
         setReceiveSymbol(tempSymbol);
-
-        const currentPay = parseFloat(payAmount); 
-        if (!isNaN(currentPay)) {
-            const newRate = receiveToken.price / payToken.price;
-            const newReceive = (currentPay * newRate).toFixed(6);
-            setReceiveAmount(parseFloat(newReceive).toString());
-        }
+        setPayAmount('');
+        setReceiveAmount('');
     };
 
     // 5. SWAP
-    const handleSwap = () => {
-        console.log(`Swapping ${payAmount} ${paySymbol} to ${receiveAmount} ${receiveSymbol}`);
-        alert("Swap functionality will be connected to Smart Contracts.");
+    const handleSwap = async () => {
+        if (!account) {
+            connectWallet();
+            return;
+        }
+        if (!payAmount) return;
+
+        setIsSwapping(true);
+        try {
+            const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
+            const amountOutWei = ethers.parseUnits(receiveAmount, receiveToken.decimals);
+
+            // min value (Slippage)
+            const slippageFactor = 10000n - BigInt(slippage * 100);
+            const amountOutMin = (amountOutWei * slippageFactor) / 10000n;
+
+            const path = [payToken.address, receiveToken.address];
+
+            await swapTokens(amountInWei, amountOutMin, path, deadline);
+
+            alert(`Swap Successful! Exchanged ${payAmount} ${payToken.symbol}`);
+            setPayAmount('');
+            setReceiveAmount('')
+        } catch (error) {
+            console.error(error);
+            alert("Swap Failed! See console for details.");
+        } finally {
+            setIsSwapping(false);
+        }
     };
 
     // 6. Open Tokens List
@@ -134,15 +159,18 @@ const SwapCard = ({ t }) => {
         setIsTokenModalOpen(false);
     };
 
-    const isInsufficientBalance = parseFloat(payAmount) > parseBalance(payToken.balance);
-    const isEnterAmount = !payAmount || parseFloat(payAmount) < 0;
+    const currentBalance = parseFloat(getTokenBalance(payToken.symbol));
+    const isInsufficientBalance = parseFloat(payAmount) > currentBalance;
+    const isEnterAmount = !payAmount || parseFloat(payAmount) <= 0;
 
     let buttonText = t.button;
-    if (isEnterAmount) buttonText = "Enter Amount";
+    if (isSwapping) buttonText = "Swapping...";
+    else if (isEnterAmount) buttonText = "Enter Amount";
     else if (isInsufficientBalance) buttonText = "Insufficient Balance";
 
     const payUsdValue = ((parseFloat(payAmount) || 0) * payToken.price).toFixed(2);
     const receiveUsdValue = ((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2);
+    const displayRate = parseFloat(receiveAmount) > 0 ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6) : '0.00';
 
     return(
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
@@ -189,7 +217,7 @@ const SwapCard = ({ t }) => {
                                         <div className="text-gray-400 text-sm font-medium flex gap-1">
                                             <span>1 {payToken.symbol} = </span>
                                             <AnimatedNumber 
-                                                value={exchangeRate.toFixed(4)} 
+                                                value={displayRate} 
                                                 suffix={` ${receiveToken.symbol}`}
                                             />
                                         </div>
@@ -254,7 +282,7 @@ const SwapCard = ({ t }) => {
                             <div className="flex justify-between mb-3">
                                 <span className="text-gray-400 text-sm font-medium">{t.pay}</span>
                                 <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
-                                    {t.balance}: <AnimatedNumber value={payToken.balance} />
+                                    {t.balance}: <AnimatedNumber value={getTokenBalance(payToken.symbol)} />
                                 </span>
                             </div>
                             <div className="flex justify-between items-center gap-4">
@@ -293,7 +321,7 @@ const SwapCard = ({ t }) => {
                             <div className="flex justify-between mb-3">
                                 <span className="text-gray-400 text-sm font-medium">{t.receive}</span>
                                 <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
-                                    {t.balance}: <AnimatedNumber value={receiveToken.balance} />
+                                    {t.balance}: <AnimatedNumber value={getTokenBalance(receiveToken.symbol)} />
                                 </span>
                             </div>
                             <div className="flex justify-between items-center gap-4">
@@ -328,7 +356,7 @@ const SwapCard = ({ t }) => {
                                 <span className="flex items-center gap-2"><Info size={14}/> {t.rate}</span>
                                 <span className="font-mono text-gray-300 flex items-center gap-1">
                                     1 <AnimatedText content={payToken.symbol} /> = 
-                                    <AnimatedNumber value={exchangeRate.toFixed(4)} /> 
+                                    <AnimatedNumber value={displayRate} /> 
                                     <AnimatedText content={receiveToken.symbol} />
                                 </span>
                             </div>
@@ -343,8 +371,8 @@ const SwapCard = ({ t }) => {
                         {/* MAIN BUTTON */}
                         <ShimmerButton 
                             onClick={handleSwap}
-                            disabled={isInsufficientBalance || isEnterAmount}
-                            className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:scale-[1.01] active:scale-[0.98]'}`}
+                            disabled={isInsufficientBalance || isEnterAmount || isSwapping}
+                            className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount || isSwapping ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:scale-[1.01] active:scale-[0.98]'}`}
                             >
                             {buttonText}
                         </ShimmerButton>
@@ -410,7 +438,7 @@ const SwapCard = ({ t }) => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-white font-mono text-sm">{token.balance}</div>
+                                            <div className="text-white font-mono text-sm">{getTokenBalance(token.symbol)}</div>
                                             <div className="text-gray-500 text-xs">${token.price}</div>
                                         </div>
                                     </div>

@@ -4,5 +4,6 @@
 export * as mockTokensSol from "./MockTokens.sol";
 export * as uniswapV2Router02Sol from "./UniswapV2Router02.sol";
 export { MriyaFiToken__factory } from "./MriyaFiToken__factory";
+export { Multicall__factory } from "./Multicall__factory";
 export { UniswapV2Factory__factory } from "./UniswapV2Factory__factory";
 export { UniswapV2Pair__factory } from "./UniswapV2Pair__factory";

@@ -54,21 +54,6 @@ async function main() {
     const factoryAddress = await factory.getAddress();
     console.log(" Factory deployed to:", factoryAddress);
 
-    try {
-    // 1. Шукаємо файл скомпільованого контракту пари
-    // УВАГА: Якщо твій контракт називається інакше (наприклад MriyaFiPair), зміни назву тут!
-    const pairArtifact = await artifacts.readArtifact("UniswapV2Pair"); 
-
-    // 2. Рахуємо хеш
-    const pairHash = ethers.keccak256(pairArtifact.bytecode);
-
-    console.log(`\n⚠️  COPY THIS HASH for your Library:`);
-    console.log(pairHash);
-    console.log(`====================================\n`);
-} catch (e) {
-    console.error("Не вдалося порахувати хеш автоматично. Перевір назву контракту пари (UniswapV2Pair).", e);
-}
-
     // --- 3. Deploy Periphery ---
     console.log("\n--- 3. Deploying Periphery (Router) ---")
 
@@ -77,85 +62,64 @@ async function main() {
     await router.waitForDeployment();
     const routerAddress = await router.getAddress();
     console.log(" Router deployed to:", routerAddress);
-
-    // --- 4. Adding Liquidity
-    console.log("\n--- 4. Adding Initial Liquidity ---")
-
-    await mriyaFi.approve(routerAddress, maxApproval);
-    await usdc.approve(routerAddress, maxApproval);
-    await usdt.approve(routerAddress, maxApproval);
-    await wbtc.approve(routerAddress, maxApproval);
-    await weth.approve(routerAddress, maxApproval);
-
-    console.log(" Tokens approved");
-
-    const blockNumber = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNumber);
-    const deadline = (block?.timestamp || 0) + 600;
-
-    console.log(" MY WALLET ADDRESS:", deployer.address);
-
-    console.log("Checking/Creating Pair manually...");
-    const pairAddress = await factory.getPair(mriyaFiAddress, usdcAddress);
-    if (pairAddress === "0x0000000000000000000000000000000000000000") {
-        console.log("Pair doesn't exist. Creating now...");
-        const tx = await factory.createPair(mriyaFiAddress, usdcAddress);
-        await tx.wait();
-        console.log("Pair created!");
-    } else {
-        console.log("Pair already exists at:", pairAddress);
-    }
-    
-    // 1. MriyaFi / USDC
-    console.log("💧 Adding liquidity: MFI <-> USDC...");
-    await router.addLiquidity(
-        mriyaFiAddress,
-        usdcAddress,
-        ethers.parseUnits("10000", 18),
-        ethers.parseUnits("5000", 6),
-        0, 0,
-        deployer.address,
-        deadline
-    );
-
-    // 2. MriyaFi / WETH
-    console.log("💧 Adding liquidity: MFI <-> WETH...");
-    await router.addLiquidity(
-        mriyaFiAddress,
-        wethAddress,
-        ethers.parseUnits("5000", 18),
-        ethers.parseUnits("10", 18),
-        0, 0,
-        deployer.address,
-        deadline
-    );
-
-    // 3. ETH / USDT
-    console.log("💧 Adding liquidity: ETH <-> USDT...");
-    await router.addLiquidity(
-        wethAddress,
-        usdtAddress,
-        ethers.parseUnits("1", 18),
-        ethers.parseUnits("2000", 6),
-        0, 0,
-        deployer.address,
-        deadline
-    );
     
     console.log("\n Deployment & Initialization Complete!");
 
-    console.table({
+    console.log("Deploying Multicall...");
+    const Multicall = await ethers.getContractFactory("Multicall");
+    const multicall = await Multicall.deploy();
+    await multicall.waitForDeployment();
+    const multicallAddress = await multicall.getAddress();
+    console.log("Multicall deployed to:", multicallAddress);
+
+    console.log("Saving files to frontend...");
+
+    await saveFrontendFiles({
+        Factory: factoryAddress,
+        Router: routerAddress,
+        Multicall: multicallAddress,
         MriyaFi: mriyaFiAddress,
         WETH: wethAddress,
         USDC: usdcAddress,
         USDT: usdtAddress,
-        WBTC: wbtcAddress,
-        Factory: factoryAddress,
-        Router: routerAddress,
+        WBTC: wbtcAddress
     });
 }
 
-main().catch((error) => {
+async function saveFrontendFiles(addresses: any) {
+    const fs = require("fs");
+    const path = require("path");
+
+    const contractsDir = path.join(__dirname, "..", "..", "src", "constants");
+
+    if (!fs.existsSync(contractsDir)) {
+        fs.mkdirSync(contractsDir, { recursive: true });
+    }
+
+    fs.writeFileSync(
+        path.join(contractsDir, "contract-address.json"),
+        JSON.stringify(addresses, undefined, 2)
+    );
+
+    const contractsInfo = {
+        Factory: (await artifacts.readArtifactSync("UniswapV2Factory")).abi,
+        Router: (await artifacts.readArtifactSync("UniswapV2Router02")).abi,
+        Multicall: (await artifacts.readArtifactSync("Multicall")).abi,
+        ERC20: (await artifacts.readArtifactSync("MriyaFiToken")).abi,
+        Pair: (await artifacts.readArtifactSync("UniswapV2Pair")).abi
+    };
+
+    fs.writeFileSync(
+        path.join(contractsDir, "contract-abi.json"),
+        JSON.stringify(contractsInfo, undefined, 2)
+    );
+
+    console.log(`Config files saved to: ${contractsDir}`);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
     console.error(error);
-    process.exitCode = 1;
-});
+    process.exit(1);
+  });
