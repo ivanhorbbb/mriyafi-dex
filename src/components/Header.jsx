@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import logoImg from '../assets/img/brand/logo.png'; 
 
+const formatAddress = (addr) => {
+    return addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length-4)}` : '';
+}
+
 const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connectWallet }) => {
-
-    const formatAddress = (addr) => {
-        return addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}` : '';
-    };
-
     const tabsRef = useRef({});
-
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, opacity: 0});
 
     useEffect(() => {
@@ -17,9 +15,9 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
         if (currentTab) {
             const newLeft = currentTab.offsetLeft + (currentTab.offsetWidth / 2) - 20;
 
-            setIndicatorStyle({
-                left: newLeft,
-                opacity: 1
+            setIndicatorStyle(prev => {
+                if (prev.left === newLeft && prev.opacity === 1) return prev;
+                return { left: newLeft, opacity: 1 };
             });
         }
     }, [activeTab]);
@@ -59,30 +57,21 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                         className="absolute -bottom-4 h-1 w-10 bg-[#00d4ff] rounded-full shadow-[0_0_10px_#00d4ff] transition-all duration-300 ease-in-out pointer-events-none"
                         style={{
                             left: `${indicatorStyle.left}px`,
-                            opacity: indicatorStyle.opacity
+                            opacity: indicatorStyle.opacity,
                         }}
                     />
-                    <div 
-                        ref={el => tabsRef.current['swap'] = el}
-                        onClick={() => setActiveTab('swap')} 
-                        className={getLinkClass('swap')}
-                    >
-                        {t.swap}
-                    </div>
-                    <div 
-                        ref={el => tabsRef.current['pools'] = el}
-                        onClick={() => setActiveTab('pools')}
-                        className={getLinkClass('pools')}
-                    >
-                        {t.pools}
-                    </div>
-                    <div 
-                        ref={el => tabsRef.current['earn'] = el}
-                        onClick={() => setActiveTab('earn')}
-                        className={getLinkClass('earn')}
-                    >
-                        {t.earn}
-                    </div>
+                    
+                    {/* Tabs */}
+                    {['swap', 'pools', 'earn'].map((tab) => (
+                        <div 
+                            key={tab}
+                            ref={el => tabsRef.current[tab] = el}
+                            onClick={() => setActiveTab(tab)} 
+                            className={getLinkClass(tab)}
+                        >
+                            {t[tab] || tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </div>
+                    ))}
                 </nav>
 
                 {/* RIGHT PART */}
@@ -127,4 +116,4 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
     )
 };
 
-export default Header;
+export default memo(Header);

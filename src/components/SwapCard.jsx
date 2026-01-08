@@ -1,12 +1,140 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ethers } from 'ethers';
 import { AnimatedNumber, ShimmerButton, AnimatedChart, FocusGlowInput, AnimatedText, AnimatedIcon } from './Animations';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
-import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, TrendingUp, RefreshCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { Settings, ArrowUpDown, Info, Fuel, ChevronDown, X, Search, HelpCircle, CheckCircle, AlertTriangle, TrendingUp, RefreshCcw } from 'lucide-react';
 
 import { TOKENS } from '../constants/tokens';
 import { useSwap } from '../hooks/useSwap';
+
+const Notification = ({ type, title, message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 5000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    const isSuccess = type === 'success';
+    const borderColor = isSuccess ? 'border-green-500/50' : 'border-red-500/50';
+    const glowColor = isSuccess ? 'shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'shadow-[0_0_20px_rgba(239,68,68,0.3)]';
+    const iconColor = isSuccess ? 'text-green-400' : 'text-red-400';
+
+    return (
+        <motion.div
+            initial={{ y: -100, opacity: 0, scale: 0.9 }}
+            animate={{ y: 20, opacity: 1, scale: 1 }}
+            exit={{ y: -100, opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`
+                fixed top-0 left-0 right-0 mx-auto w-full max-w-md z-[9999]
+                flex items-start gap-4 p-4 rounded-2xl
+                bg-[#131823]/95 backdrop-blur-xl border ${borderColor} ${glowColor}
+            `}
+        >
+            <div className={`p-2 rounded-full bg-[#1a2c38] ${iconColor} mt-1 shrink-0`}>
+                {isSuccess ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
+            </div>
+            <div className="flex-1">
+                <h4 className={`font-bold text-lg leading-tight mb-1 ${isSuccess ? 'text-green-400' : 'text-red-400'}`}>
+                    {title}
+                </h4>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                    {message}
+                </p>
+            </div>
+            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors mt-1 shrink-0">
+                <X size={20} />
+            </button>
+        </motion.div>
+    );
+};
+
+const ChartSection = memo(({ timeframe, setTimeframe, payToken, receiveToken, displayRate, themeStyles, marketRate, onStatsUpdate, priceChange }) => {
+    
+    const chartPrice = parseFloat(displayRate) > 0 ? displayRate : marketRate;
+    
+    const isPositive = priceChange >= 0;
+    const percentColor = isPositive ? '#22c55e' : '#ef4444';
+    
+    return (
+        <div className="lg:col-span-2 flex flex-col">
+            <div className="
+            relative w-full h-full min-h-[550px] 
+            rounded-[3rem] border border-white/10 
+            bg-[#131823]/80 backdrop-blur-2xl shadow-2xl
+            flex flex-col overflow-hidden transition-all duration-500
+            ">
+                {/* Header */}
+                <div className="p-8 pb-0 flex flex-col z-10">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className="flex -space-x-2">
+                                <AnimatedIcon src={payToken.img} alt={payToken.symbol} className="w-10 h-10 border-2 border-[#131823] z-10 bg-[#131823]" />
+                                <AnimatedIcon src={receiveToken.img} alt={receiveToken.symbol} className="w-10 h-10 border-2 border-[#131823] z-0 bg-[#131823]" />
+                            </div>
+                            <div>
+                                <div className="flex items-baseline gap-3">
+                                    <h2 className="text-2xl font-bold text-white">
+                                        <AnimatedText content={`${payToken.symbol} / ${receiveToken.symbol}`} />
+                                    </h2>
+                                    
+                                    <span className="text-lg font-mono font-bold flex items-center gap-1">
+                                        <AnimatedNumber 
+                                            value={priceChange ? Math.abs(priceChange).toFixed(2) : "0.00"} 
+                                            prefix={isPositive ? "+" : "-"} 
+                                            suffix="%" 
+                                            color={percentColor}
+                                        />
+                                    </span>
+                                </div>
+                                <div className="text-gray-400 text-sm font-medium flex gap-1">
+                                    <span>1 {payToken.symbol} = </span>
+                                    <AnimatedNumber value={marketRate} suffix={` ${receiveToken.symbol}`} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Timeframe */}
+                        <div className="flex bg-[#0a0e17]/50 p-1 rounded-xl border border-white/5">
+                            {['1H', '1D', '1W', '1M', '1Y'].map((tf) => (
+                                <button 
+                                    key={tf}
+                                    onClick={() => setTimeframe(tf)}
+                                    className='relative px-4 py-1.5 rounded-lg text-sm font-bold outline-none'
+                                >
+                                    {timeframe === tf && (
+                                        <motion.div
+                                            layoutId='active-pill'
+                                            className="absolute inset-0 bg-[#1a2c38] rounded-lg border border-white/10 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                        />
+                                    )}
+                                    <span className={`relative z-10 transition-colors duration-200 ${timeframe === tf ? themeStyles.textAccent : 'text-gray-500 hover:text-gray-300'}`}>
+                                        {tf}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Chart */}
+                <div className="flex-grow relative w-full mt-auto">
+                    <AnimatedChart 
+                        timeframe={timeframe} 
+                        color={themeStyles.isGold ? '#f0dfae' : '#00d4ff'} 
+                        currentPrice={chartPrice}
+                        onStatsUpdate={onStatsUpdate}
+                        currencySymbol={receiveToken.symbol}
+                    />
+                </div>
+
+                {/* Chart Glow */}
+                <div className={`absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[120px] opacity-10 pointer-events-none transition-colors duration-500 ${themeStyles.bgGlow}`}></div>
+            </div>
+        </div>
+    );
+});
 
 const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
@@ -26,11 +154,31 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
     const [tokenModalType, setTokenModalType] = useState('pay');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
     const [slippage, setSlippage] = useState(0.5);
     const [deadline, setDeadline] = useState(20);
     const [timeframe, setTimeframe] = useState('1D');
+    const [gasPriceUsd, setGasPriceUsd] = useState('');
+
+    const [marketRate, setMarketRate] = useState('0.00');
+    const [priceChange, setPriceChange] = useState(0);
+
+    const [notification, setNotification] = useState(null);
 
     const { getAmountsOut, swapTokens } = useSwap(provider, account);
+
+    const isGoldTheme = payToken.symbol === 'MFI' || receiveToken.symbol === 'MFI' || payToken.symbol === 'ETH';
+
+    const themeStyles = useMemo(() => ({
+        isGold: isGoldTheme,
+        textAccent: isGoldTheme ? 'text-[#f0dfae]' : 'text-[#00d4ff]',
+        bgGlow: isGoldTheme ? 'bg-[#f0dfae]' : 'bg-[#00d4ff]',
+        inputText: isGoldTheme ? 'text-[#f0dfae]' : 'text-[#00d4ff]',
+        maxButton: isGoldTheme ? 'text-[#f0dfae] bg-[#f0dfae]/10 hover:bg-[#f0dfae]/20' : 'text-[#00d4ff] bg-[#00d4ff]/10 hover:bg-[#00d4ff]/20',
+        hoverBorder: isGoldTheme ? 'hover:border-[#f0dfae]/30' : 'hover:border-[#00d4ff]/30',
+        buttonGradient: isGoldTheme ? 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)]' : 'bg-gradient-to-r from-[#00d4ff] via-[#00aaff] to-[#0088ff] text-white hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]',
+        tokenSelectActive: isGoldTheme ? 'bg-[#f0dfae]/10 border border-[#f0dfae]/30' : 'bg-[#00d4ff]/10 border border-[#00d4ff]/30'
+    }), [isGoldTheme]);
 
     const getTokenBalance = (symbol) => {
         if (!balances) return "0.0";
@@ -42,71 +190,123 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // MARKET RATE EFFECT
     useEffect(() => {
-        const fetchPrice = async () => {
-            if (!payAmount || isNaN(parseFloat(payAmount)) || parseFloat(payAmount) === 0) {
-                setReceiveAmount('');
-                return;
-            }
-
+        const fetchMarketRate = async () => {
             const path = [payToken.address, receiveToken.address];
-
             try {
-                const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
-
-                const amountOutWei = await getAmountsOut(amountInWei, path);
-
-                const formattedOut = ethers.formatUnits(amountOutWei, receiveToken.decimals);
-
-                setReceiveAmount(parseFloat(formattedOut).toFixed(6));
+                const oneUnit = ethers.parseUnits("1", payToken.decimals);
+                const rateWei = await getAmountsOut(oneUnit, path);
+                if (rateWei && rateWei !== '0') {
+                    const rateFormatted = ethers.formatUnits(rateWei, receiveToken.decimals);
+                    setMarketRate(parseFloat(rateFormatted).toFixed(6));
+                }
             } catch (e) {
-                console.error("Price fetch error", e);
+                console.warn("Market rate fetch error:", e);
+            }
+        };
+        fetchMarketRate();
+        const interval = setInterval(fetchMarketRate, 10000);
+        return () => clearInterval(interval);
+    }, [payToken, receiveToken, getAmountsOut]);
+
+    // GAS EFFECT
+    useEffect(() => {
+        const fetchGas = async () => {
+            if (!provider) return;
+            try {
+                const feeData = await provider.getFeeData();
+                const gasPrice = feeData.gasPrice || 3000000000n;
+
+                const estimatedGasLimit = 200000n;
+
+                const totalCostWei = gasPrice * estimatedGasLimit;
+                const totalCostEth = parseFloat(ethers.formatEther(totalCostWei));
+
+                const ethPrice = tokens.find(t => t.symbol === 'ETH')?.price || 2000;
+                const costUsd = (totalCostEth * ethPrice).toFixed(2);
+
+                setGasPriceUsd(costUsd);
+            } catch (e) {
+                console.warn("Gas estimation failed", e);
+                setGasPriceUsd("---");
             }
         };
 
-        const timer = setTimeout(() => {
-            fetchPrice();
-        }, 500);
+        fetchGas();
+        const interval = setInterval(fetchGas, 10000);
+        return () => clearInterval(interval);
+    }, [provider, tokens]);
+
+    useEffect(() => {
+        if (!payAmount || payAmount === '' || parseFloat(payAmount) <= 0) {
+            setReceiveAmount('');
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            const path = [payToken.address, receiveToken.address];
+            try {
+                const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
+                const amountOutWei = await getAmountsOut(amountInWei, path);
+
+                if (amountOutWei && amountOutWei !== '0') {
+                    const formattedOut = ethers.formatUnits(amountOutWei, receiveToken.decimals);
+                    setReceiveAmount(parseFloat(formattedOut).toFixed(6));
+                }
+            } catch (error) {
+                console.warn("Quote error:", error);
+            }
+        }, 600);
 
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [payAmount, payToken, receiveToken, getAmountsOut]);
 
+    
     // FUNCTIONS
 
     // 1. Pay Input
-    const handlePayInput = (e) => {
+    const handlePayInput = useCallback((e) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setPayAmount(value);
         }
-    }
+    }, []);
 
     // 2. Receive Input
-    const handleReceiveInput = (e) => {
+    const handleReceiveInput = useCallback((e) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setReceiveAmount(value);
         }
-    }
+    }, []);
 
     // 3. MAX Button
-    const handleMaxClick = () => {
+    const handleMaxClick = useCallback(() => {
         const balance = getTokenBalance(payToken.symbol);
         const cleanBalance = balance.replace(/,/g, '');
         setPayAmount(cleanBalance);
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [payToken, balances]);
 
     // 4.Swap Tokens
-    const handleSwapArrows = () => {
-        const tempSymbol = paySymbol;
-        setPaySymbol(receiveSymbol);
-        setReceiveSymbol(tempSymbol);
+    const handleSwapArrows = useCallback(() => {
+        const currentPay = paySymbol;
+        const currentReceive = receiveSymbol;
+
+        setPaySymbol(currentReceive);
+        setReceiveSymbol(currentPay);
+        
         setPayAmount('');
         setReceiveAmount('');
+    }, [paySymbol, receiveSymbol]);
+
+    // 5. Notification Helper
+    const showNotification = (type, title, message) => {
+        setNotification({ type, title, message });
     };
 
-    // 5. SWAP
+    // 6. SWAP
     const handleSwap = async () => {
         if (!account) {
             connectWallet();
@@ -117,35 +317,48 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         setIsSwapping(true);
         try {
             const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
+            
+            if (!receiveAmount) throw new Error("Price not updated yet");
+
             const amountOutWei = ethers.parseUnits(receiveAmount, receiveToken.decimals);
 
             // min value (Slippage)
-            const slippageFactor = 10000n - BigInt(slippage * 100);
+            const slippageFactor = 10000n - BigInt(Math.floor(slippage * 100));
             const amountOutMin = (amountOutWei * slippageFactor) / 10000n;
+
+            const deadlineInSeconds = Math.floor(Date.now() / 1000) + (deadline * 60);
 
             const path = [payToken.address, receiveToken.address];
 
-            await swapTokens(amountInWei, amountOutMin, path, deadline);
+            await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
 
-            alert(`Swap Successful! Exchanged ${payAmount} ${payToken.symbol}`);
+            const successTitle = t.notifications?.successTitle || 'Success';
+            const swappedText = t.notifications?.swapped || 'Successfully swapped';
+            const toText = t.notifications?.to || 'to';
+            const successMsg = `${swappedText} ${payAmount} ${payToken.symbol} ${toText} ${receiveAmount} ${receiveToken.symbol}`;
+
+            showNotification('success', successTitle, successMsg);
+
             setPayAmount('');
             setReceiveAmount('')
         } catch (error) {
             console.error(error);
-            alert("Swap Failed! See console for details.");
+            const errorTitle = t.notifications?.errorTitle || 'Error';
+            const errorMsg = t.notifications?.errorMsg || 'Swap failed! Check settings.';
+            showNotification('error', errorTitle, errorMsg);
         } finally {
             setIsSwapping(false);
         }
     };
 
-    // 6. Open Tokens List
+    // 7. Open Tokens List
     const openTokenModal = (type) => {
         setTokenModalType(type);
         setSearchQuery('');
         setIsTokenModalOpen(true);
     };
 
-    // 7. Select Token
+    // 8. Select Token
     const selectToken = (token) => {
         if (tokenModalType === 'pay') {
             if (token.symbol === receiveSymbol) setReceiveSymbol(paySymbol);
@@ -170,95 +383,43 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
     const payUsdValue = ((parseFloat(payAmount) || 0) * payToken.price).toFixed(2);
     const receiveUsdValue = ((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2);
-    const displayRate = parseFloat(receiveAmount) > 0 ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6) : '0.00';
+    const displayRate = parseFloat(receiveAmount) > 0 && parseFloat(payAmount) > 0
+        ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6) 
+        : marketRate;
 
     return(
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
+
+            {/* Notification Portal */}
+            {createPortal(
+                <AnimatePresence>
+                    {notification && (
+                        <Notification 
+                            key="notification"
+                            type={notification.type}
+                            title={notification.title}
+                            message={notification.message} 
+                            onClose={() => setNotification(null)} 
+                        />
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
             
             <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 
                 {/* LEFT COLUMN: CHART */}
-                <div className="lg:col-span-2 flex flex-col">
-                    <div className="
-                        relative w-full h-full min-h-[550px] 
-                        rounded-[3rem] border border-white/10 
-                        bg-[#131823]/80 backdrop-blur-2xl shadow-2xl
-                        flex flex-col overflow-hidden
-                    ">
-                        {/* Header */}
-                        <div className="p-8 pb-0 flex flex-col z-10">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex -space-x-2">
-                                        <AnimatedIcon 
-                                            src={payToken.img} 
-                                            alt={payToken.symbol} 
-                                            className="w-10 h-10 border-2 border-[#131823] z-10 bg-[#131823]" 
-                                        />
-                                        <AnimatedIcon 
-                                            src={receiveToken.img} 
-                                            alt={receiveToken.symbol} 
-                                            className="w-10 h-10 border-2 border-[#131823] z-0 bg-[#131823]" 
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-baseline gap-3">
-                                            <h2 className="text-2xl font-bold text-white">
-                                                <AnimatedText content={`${payToken.symbol} / ${receiveToken.symbol}`} />
-                                            </h2>
-                                            <span className="text-lg font-mono font-bold text-[#00d4ff]">
-                                                <AnimatedNumber 
-                                                    value={payToken.symbol === 'ETH' ? "5.24" : "2.85"} 
-                                                    prefix="+" 
-                                                    suffix="%" 
-                                                />
-                                            </span>
-                                        </div>
-                                        <div className="text-gray-400 text-sm font-medium flex gap-1">
-                                            <span>1 {payToken.symbol} = </span>
-                                            <AnimatedNumber 
-                                                value={displayRate} 
-                                                suffix={` ${receiveToken.symbol}`}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Timeframe */}
-                                <div className="flex bg-[#0a0e17]/50 p-1 rounded-xl border border-white/5">
-                                    {['1H', '1D', '1W', '1M', '1Y'].map((tf) => (
-                                        <button 
-                                            key={tf}
-                                            onClick={() => setTimeframe(tf)}
-                                            className='relative px-4 py-1.5 rounded-lg text-sm font-bold outline-none'
-                                        >
-                                            {timeframe === tf && (
-                                                <motion.div
-                                                    layoutId='active-pill'
-                                                    className="absolute inset-0 bg-[#1a2c38] rounded-lg border border-white/10 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
-                                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                                />
-                                            )}
-                                            <span className={`relative z-10 transition-colors duration-200 ${
-                                                timeframe === tf ? 'text-[#00d4ff]' : 'text-gray-500 hover:text-gray-300'
-                                            }`}>
-                                                {tf}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* SVG Chart Mock */}
-                        <div className="flex-grow relative w-full mt-auto">
-                            <AnimatedChart timeframe={timeframe} />
-                        </div>
-                        
-                        {/* Chart Glow */}
-                        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00d4ff] rounded-full blur-[120px] opacity-10 pointer-events-none"></div>
-                    </div>
-                </div>
+                <ChartSection 
+                    timeframe={timeframe} 
+                    setTimeframe={setTimeframe} 
+                    payToken={payToken} 
+                    receiveToken={receiveToken} 
+                    displayRate={displayRate} 
+                    themeStyles={themeStyles} 
+                    marketRate={marketRate}
+                    onStatsUpdate={setPriceChange}
+                    priceChange={priceChange}
+                />
 
                 {/* RIGHT COLUMN: SWAP */}
                 <div className="lg:col-span-1">
@@ -305,19 +466,19 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
                                 <span className="text-xs text-gray-500 flex gap-1">
                                     ≈ $<AnimatedNumber value={payUsdValue} />
                                 </span>
-                                <button onClick={handleMaxClick} className="text-xs text-[#00d4ff] bg-[#00d4ff]/10 px-2 py-0.5 rounded hover:bg-[#00d4ff]/20 transition font-bold">Max</button>
+                                <button onClick={handleMaxClick} className={`text-xs px-2 py-0.5 rounded transition font-bold ${themeStyles.maxButton}`}>Max</button>
                             </div>
                         </FocusGlowInput>
 
                         {/* SWITCH */}
                         <div className="relative h-4 flex justify-center items-center my-2 z-10">
-                            <button onClick={handleSwapArrows} className="absolute bg-[#1a2c38] p-2 rounded-xl border-[4px] border-[#131823] hover:scale-110 hover:border-[#131823] transition-all duration-200 cursor-pointer shadow-xl hover:rotate-180">
-                                <ArrowUpDown size={20} className="text-[#00d4ff]" />
+                            <button onClick={handleSwapArrows} className={`absolute bg-[#1a2c38] p-2 rounded-xl border-[4px] border-[#131823] hover:scale-110 hover:border-[#131823] transition-all duration-200 cursor-pointer shadow-xl hover:rotate-180 ${themeStyles.textAccent}`}>
+                                <ArrowUpDown size={20} />
                             </button>
                         </div>
 
                         {/* RECEIVE INPUT */}
-                        <div className="bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent hover:border-[#f0dfae]/30 transition-all duration-300">
+                        <div className={`bg-[#0a0e17]/60 rounded-[2rem] p-5 border border-transparent transition-all duration-300 ${themeStyles.hoverBorder}`}>
                             <div className="flex justify-between mb-3">
                                 <span className="text-gray-400 text-sm font-medium">{t.receive}</span>
                                 <span className="text-gray-400 text-xs font-mono flex items-center gap-1">
@@ -362,8 +523,8 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
                             </div>
                             <div className="flex justify-between text-sm text-gray-400">
                                 <span className="flex items-center gap-2"><Fuel size={14}/> {t.gas}</span>
-                                <span className="font-mono text-[#00d4ff] flex items-center">
-                                    $<AnimatedNumber value="4.50" />
+                                <span className={`font-mono flex items-center ${themeStyles.textAccent}`}>
+                                    $<AnimatedNumber value={gasPriceUsd || "0.00"} />
                                 </span>
                             </div>
                         </div>
@@ -372,7 +533,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
                         <ShimmerButton 
                             onClick={handleSwap}
                             disabled={isInsufficientBalance || isEnterAmount || isSwapping}
-                            className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount || isSwapping ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : 'bg-gradient-to-r from-[#ffeebb] via-[#f0dfae] to-[#d4c085] text-[#0a0e17] hover:shadow-[0_0_20px_rgba(240,223,174,0.3)] hover:scale-[1.01] active:scale-[0.98]'}`}
+                            className={`w-full mt-6 py-5 rounded-2xl font-bold text-xl tracking-wide shadow-lg transition-all flex items-center justify-center gap-3 ${isInsufficientBalance || isEnterAmount || isSwapping ? 'bg-[#1a2c38] text-gray-500 cursor-not-allowed border border-white/5' : `${themeStyles.buttonGradient} hover:scale-[1.01] active:scale-[0.98]`}`}
                             >
                             {buttonText}
                         </ShimmerButton>

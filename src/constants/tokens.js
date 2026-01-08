@@ -10,7 +10,7 @@ export const TOKENS = [
     { 
         name: 'MriyaFi',
         symbol: 'MFI',
-        address: "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+        address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         decimals: 18,
         img: mfi,
         price: 0.02
@@ -18,14 +18,15 @@ export const TOKENS = [
     { 
         name: 'Ethereum',
         symbol: 'ETH',
-        address: "0x59b670e9fA9D0A427751Af201D676719a970857b",
+        address: "ETH",
         decimals: 18,
-        img: eth
+        img: eth,
+        price: 2000.00
     },
     { 
         name: 'USD Coin',
         symbol: 'USDC',
-        address: "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+        address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
         decimals: 6,
         img: usdc,
         price: 1.0
@@ -33,22 +34,25 @@ export const TOKENS = [
     { 
         name: 'Tether',
         symbol: 'USDT',
-        address: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+        address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
         decimals: 6,
-        img: usdt
+        img: usdt,
+        price: 1.0
     },
     { 
         name: 'Wrapped Bitcoin',
         symbol: 'WBTC',
-        address: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+        address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
         decimals: 8,
-        img: wbtc
+        img: wbtc,
+        price: 30000.00
     },
     { 
         name: 'Wrapped Ethereum',
         symbol: 'WETH',
-        address: "0x59b670e9fA9D0A427751Af201D676719a970857b",
+        address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
         decimals: 18,
-        img: weth
+        img: weth,
+        price: 2000.00
     }
 ];

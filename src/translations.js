@@ -20,6 +20,13 @@ export const translations = {
                 deadline: 'Transaction Deadline',
                 deadlineInfo: 'Your transaction will revert if it is pending for more than this long.',
                 minutes: 'minutes'
+            },
+            notifications: {
+                successTitle: 'Success',
+                errorTitle: 'Error',
+                swapped: 'Successfully swapped',
+                to: 'to',
+                errorMsg: 'Swap failed! Please check your balance or slippage settings.'
             }
         },
         pools: {
@@ -87,6 +94,13 @@ export const translations = {
                 deadline: 'Дедлайн транзакції',
                 deadlineInfo: 'Транзакція буде скасована, якщо вона оброблятиметься довше цього часу.',
                 minutes: 'хвилин'
+            },
+            notifications: {
+                successTitle: 'Успішно',
+                errorTitle: 'Помилка',
+                swapped: 'Успішно обміняно',
+                to: 'на',
+                errorMsg: 'Обмін не вдався! Перевірте баланс або налаштування прослизання.'
             }
         },
         pools: {
