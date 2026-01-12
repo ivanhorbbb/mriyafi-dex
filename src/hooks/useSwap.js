@@ -4,7 +4,22 @@ import contractAddresses from '../constants/contract-address.json';
 import contractAbi from '../constants/contract-abi.json';
 
 const ROUTER_ADDRESS = contractAddresses.Router;
-const WETH_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const WETH_ADDRESS = contractAddresses.WETH;
+
+const ROUTER_ABI = [
+    "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
+    "function getAmountsIn(uint amountOut, address[] memory path) public view returns (uint[] memory amounts)",
+    "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+    "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
+    "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+    "function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
+    "function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)"
+];
+
+const ERC20_ABI = [
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)"
+];
 
 const WETH_ABI = [
     "function deposit() payable",
@@ -20,11 +35,7 @@ export const useSwap = (provider, account) => {
             const initRouter = async () => {
                 try {
                     const signer = await provider.getSigner();
-                    const routerContract = new ethers.Contract(
-                        ROUTER_ADDRESS,
-                        contractAbi.Router,
-                        signer
-                    );
+                    const routerContract = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer);
                     setRouter(routerContract);
                 } catch (err) {
                     console.error("Failed to init router:", err);
@@ -38,23 +49,39 @@ export const useSwap = (provider, account) => {
         return path.map(address => address === 'ETH' ? WETH_ADDRESS : address);
     };
 
-    const getAmountsOut = useCallback(async (amountIn, path) => {
-
+    const getAmountsIn = useCallback(async (amountOut, path) => {
         if (!router) return '0';
-        if (!amountIn || amountIn === '0' || amountIn === '.') return '0';
-        if (!path || !Array.isArray(path) || path.length < 2) return '0';
+        if (!amountOut || amountOut.toString() === '0') return '0';
         
         try {
             const cleanPath = getCleanPath(path);
-
+            
             if (cleanPath[0].toLowerCase() === cleanPath[1].toLowerCase()) {
-                return amountIn; 
+                return amountOut;
             }
 
-            const amounts = await router.getAmountsOut(amountIn, cleanPath);
-            return amounts[1]; 
+            const amounts = await router.getAmountsIn(amountOut, cleanPath);
+            
+            return amounts[0];
+
         } catch (error) {
-            console.warn("Quote error:", error);
+            console.error("GetAmountsIn Error (check liquidity or WETH address):", error);
+            return '0';
+        }
+    }, [router]);
+
+    const getAmountsOut = useCallback(async (amountIn, path) => {
+        if (!router) return '0';
+        if (!amountIn || amountIn.toString() === '0') return '0';
+        
+        try {
+            const cleanPath = getCleanPath(path);
+            if (cleanPath[0].toLowerCase() === cleanPath[1].toLowerCase()) return amountIn;
+
+            const amounts = await router.getAmountsOut(amountIn, cleanPath);
+            return amounts[1];
+        } catch (error) {
+            console.error("GetAmountsOut Error:", error);
             return '0';
         }
     }, [router]);
@@ -150,5 +177,5 @@ export const useSwap = (provider, account) => {
         }
     };
 
-    return { getAmountsOut, swapTokens };
+    return { getAmountsIn, getAmountsOut, swapTokens };
 };

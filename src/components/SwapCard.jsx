@@ -154,6 +154,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
     const [tokenModalType, setTokenModalType] = useState('pay');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeInput, setActiveInput] = useState('pay');
 
     const [slippage, setSlippage] = useState(0.5);
     const [deadline, setDeadline] = useState(20);
@@ -165,7 +166,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
     const [notification, setNotification] = useState(null);
 
-    const { getAmountsOut, swapTokens } = useSwap(provider, account);
+    const { getAmountsIn, getAmountsOut, swapTokens } = useSwap(provider, account);
 
     const isGoldTheme = payToken.symbol === 'MFI' || receiveToken.symbol === 'MFI' || payToken.symbol === 'ETH';
 
@@ -239,6 +240,8 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
     }, [provider, tokens]);
 
     useEffect(() => {
+        if (activeInput !== 'pay') return;
+        
         if (!payAmount || payAmount === '' || parseFloat(payAmount) <= 0) {
             setReceiveAmount('');
             return;
@@ -260,8 +263,34 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         }, 600);
 
         return () => clearTimeout(timer);
-    }, [payAmount, payToken, receiveToken, getAmountsOut]);
+    }, [payAmount, payToken, receiveToken, getAmountsOut, activeInput]);
 
+    useEffect(() => {
+        if (activeInput !== 'receive') return; 
+
+        if (!receiveAmount || parseFloat(receiveAmount) <= 0) {
+            setPayAmount('');
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            const path = [payToken.address, receiveToken.address];
+            try {
+                const amountOutWei = ethers.parseUnits(receiveAmount, receiveToken.decimals);
+                
+                const amountInWei = await getAmountsIn(amountOutWei, path);
+
+                if (amountInWei && amountInWei.toString() !== '0') {
+                    const formattedIn = ethers.formatUnits(amountInWei, payToken.decimals);
+                    setPayAmount(parseFloat(formattedIn).toFixed(6));
+                }
+            } catch (error) {
+                console.warn("Calculation failed:", error);
+            }
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [receiveAmount, payToken, receiveToken, getAmountsIn, activeInput]);
     
     // FUNCTIONS
 
@@ -270,6 +299,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setPayAmount(value);
+            setActiveInput('pay');
         }
     }, []);
 
@@ -278,6 +308,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         const value = e.target.value;
         if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setReceiveAmount(value);
+            setActiveInput('receive');
         }
     }, []);
 

@@ -47,8 +47,13 @@ function App() {
   const [provider, setProvider] = useState(null);
   const [activeTab, setActiveTab] = useState('swap');
   const [lang, setLang] = useState('en');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const { balances } = useTokenBalances(provider, account);
+  const { balances } = useTokenBalances(provider, account, refreshTrigger);
+
+  const updateBalances = useCallback(() => {
+      setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   const connectWallet = useCallback(async () => {
     if (window.ethereum) { 
@@ -64,6 +69,19 @@ function App() {
       alert("Please install MetaMask to use this app!");
     }
   }, []);
+
+  const disconnectWallet = async () => {
+    setAccount(null);
+    
+    try {
+      await window.ethereum.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }]
+      });
+    } catch (error) {
+      console.error("Failed to revoke permissions (user rejected or not supported)", error);
+    }
+  };
 
   
   const toggleLang = useCallback(() => {
@@ -118,6 +136,7 @@ function App() {
         t={t.nav}
         account={account}
         connectWallet={connectWallet}
+        disconnectWallet={disconnectWallet}
       />
   ), [activeTab, lang, t.nav, account, connectWallet, toggleLang]);
 
@@ -130,12 +149,12 @@ function App() {
   
   const content = useMemo(() => {
     switch(activeTab) {
-      case 'swap': return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} />;
+      case 'swap': return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} updateBalances={updateBalances} />;
       case 'pools': return <PoolsCard t={t.pools} />;
       case 'earn': return <Earn t={t} />;
       default: return <SwapCard t={t.swap} account={account} balances={balances}/>;
     }
-  }, [activeTab, t, account, balances, provider, connectWallet]);
+  }, [activeTab, t, account, balances, provider, connectWallet, updateBalances]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">

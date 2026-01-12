@@ -5,12 +5,13 @@ import usdt from '../assets/img/tokens/usdt.png';
 import wbtc from '../assets/img/tokens/wrapped-btc.png';
 import weth from '../assets/img/tokens/wrapped-eth.png';
 import mfi from '../assets/img/tokens/mfi.png';
+import contractAddresses from './contract-address.json';
 
 export const TOKENS = [
     { 
         name: 'MriyaFi',
         symbol: 'MFI',
-        address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        address: contractAddresses.MriyaFi,
         decimals: 18,
         img: mfi,
         price: 0.02
@@ -26,7 +27,7 @@ export const TOKENS = [
     { 
         name: 'USD Coin',
         symbol: 'USDC',
-        address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+        address: contractAddresses.USDC,
         decimals: 6,
         img: usdc,
         price: 1.0
@@ -34,7 +35,7 @@ export const TOKENS = [
     { 
         name: 'Tether',
         symbol: 'USDT',
-        address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        address: contractAddresses.USDT,
         decimals: 6,
         img: usdt,
         price: 1.0
@@ -42,7 +43,7 @@ export const TOKENS = [
     { 
         name: 'Wrapped Bitcoin',
         symbol: 'WBTC',
-        address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        address: contractAddresses.WBTC,
         decimals: 8,
         img: wbtc,
         price: 30000.00
@@ -50,7 +51,7 @@ export const TOKENS = [
     { 
         name: 'Wrapped Ethereum',
         symbol: 'WETH',
-        address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        address: contractAddresses.WETH,
         decimals: 18,
         img: weth,
         price: 2000.00

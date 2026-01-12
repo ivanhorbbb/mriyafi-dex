@@ -1,76 +1,79 @@
-import hre, { artifacts } from "hardhat";
+import { ethers, artifacts } from "hardhat";
+import path from "path";
+import fs from "fs";
 
 async function main() {
-    const ethers = (hre as any).ethers;
     const [deployer] = await ethers.getSigners();
-    console.log(" Deploying contracts with the account:", deployer.address);
+    console.log("==========================================");
+    console.log("🚀 Deploying contracts with account:", deployer.address);
+    console.log("==========================================\n");
 
-    const maxApproval = ethers.MaxUint256;
+   // --- 1. Deploy Tokens ---
+    console.log("--- 1. Deploying Tokens ---");
 
-    // --- 1. Deploy tokens ---
-    console.log("\n--- 1. Deploying Tokens ---");
+    const deployToken = async (name: string, symbol: string) => {
+        const TokenFactory = await ethers.getContractFactory(name);
+        const token = await TokenFactory.deploy();
+        await token.waitForDeployment();
+        const address = await token.getAddress();
+        console.log(` ✅ ${symbol} deployed to: ${address}`);
+        return { contract: token, address };
+    };
 
-    // MriyaFi
-    const MriyaFiToken = await ethers.getContractFactory("MriyaFiToken");
-    const mriyaFi = await MriyaFiToken.deploy();
-    await mriyaFi.waitForDeployment();
-    const mriyaFiAddress = await mriyaFi.getAddress();
-    console.log(" MriyaFi Token deployed to:", mriyaFiAddress);
+    const mriyaFi = await deployToken("MriyaFiToken", "MFI");
+    const weth = await deployToken("MockWETH", "WETH");
+    const usdc = await deployToken("MockUSDC", "USDC");
+    const usdt = await deployToken("MockUSDT", "USDT");
+    const wbtc = await deployToken("MockWBTC", "WBTC");
 
-    // Mock WETH
-    const MockWETH = await ethers.getContractFactory("MockWETH");
-    const weth = await MockWETH.deploy();
-    await weth.waitForDeployment();
-    const wethAddress = await weth.getAddress();
-    console.log(" WETH Token deployed to:", wethAddress);
+    // --- 1.1 Mint Initial Supply to Deployer ---
+    console.log("\n--- 1.1 Minting Initial Supply to Deployer ---");
+    const mintAmount = ethers.parseUnits("1000000", 18);
+    const mintAmount6 = ethers.parseUnits("1000000", 6);
 
-    // Mock USDC
-    const MockUSDC = await ethers.getContractFactory("MockUSDC");
-    const usdc = await MockUSDC.deploy();
-    await usdc.waitForDeployment();
-    const usdcAddress = await usdc.getAddress();
-    console.log(" USDC Token deployed to:", usdcAddress);
+    try {
+        await mriyaFi.contract.mint(deployer.address, mintAmount);
+        console.log(" 💰 Minted 1,000,000 MFI to deployer");
+        
+        await usdc.contract.mint(deployer.address, mintAmount6);
+        console.log(" 💰 Minted 1,000,000 USDC to deployer");
 
-    // Mock USDT
-    const MockUSDT = await ethers.getContractFactory("MockUSDT");
-    const usdt = await MockUSDT.deploy();
-    await usdt.waitForDeployment();
-    const usdtAddress = await usdt.getAddress();
-    console.log(" USDT Token deployed to:", usdtAddress);
+        await usdt.contract.mint(deployer.address, mintAmount6);
+        console.log(" 💰 Minted 1,000,000 USDT to deployer");
 
-    // Mock WBTC
-    const MockWBTC = await ethers.getContractFactory("MockWBTC");
-    const wbtc = await MockWBTC.deploy();
-    await wbtc.waitForDeployment();
-    const wbtcAddress = await wbtc.getAddress();
-    console.log(" WBTC Token deployed to:", wbtcAddress);
+        await wbtc.contract.mint(deployer.address, ethers.parseUnits("100", 8));
+        console.log(" 💰 Minted 100 WBTC to deployer");
+        
+    } catch (e) {
+        console.log(" ⚠️ Minting skipped (functions might not exist on Mock contracts)");
+    }
 
     // --- 2. Deploy Core ---
-    console.log("\n--- 2. Deploying Core (Factory) ---")
+    console.log("\n--- 2. Deploying Core (Factory) ---");
 
     const Factory = await ethers.getContractFactory("UniswapV2Factory");
     const factory = await Factory.deploy(deployer.address);
     await factory.waitForDeployment();
     const factoryAddress = await factory.getAddress();
-    console.log(" Factory deployed to:", factoryAddress);
+    console.log(" 🏭 Factory deployed to:", factoryAddress);
 
     // --- 3. Deploy Periphery ---
-    console.log("\n--- 3. Deploying Periphery (Router) ---")
+    console.log("\n--- 3. Deploying Periphery (Router) ---");
 
     const Router = await ethers.getContractFactory("UniswapV2Router02");
-    const router = await Router.deploy(factoryAddress, wethAddress);
+    const router = await Router.deploy(factoryAddress, weth.address);
     await router.waitForDeployment();
     const routerAddress = await router.getAddress();
-    console.log(" Router deployed to:", routerAddress);
+    console.log(" 🔀 Router deployed to:", routerAddress);
     
     console.log("\n Deployment & Initialization Complete!");
 
-    console.log("Deploying Multicall...");
+    console.log("\n--- 4. Deploying Multicall ---");
     const Multicall = await ethers.getContractFactory("Multicall");
     const multicall = await Multicall.deploy();
     await multicall.waitForDeployment();
     const multicallAddress = await multicall.getAddress();
-    console.log("Multicall deployed to:", multicallAddress);
+    console.log(" 📞 Multicall deployed to:", multicallAddress);
 
     console.log("Saving files to frontend...");
 
@@ -78,18 +81,17 @@ async function main() {
         Factory: factoryAddress,
         Router: routerAddress,
         Multicall: multicallAddress,
-        MriyaFi: mriyaFiAddress,
-        WETH: wethAddress,
-        USDC: usdcAddress,
-        USDT: usdtAddress,
-        WBTC: wbtcAddress
+        MriyaFi: mriyaFi.address,
+        WETH: weth.address,
+        USDC: usdc.address,
+        USDT: usdt.address,
+        WBTC: wbtc.address
     });
+
+    console.log("\n✨ Deployment Complete! You are ready to run addLiquidity.js ✨");
 }
 
 async function saveFrontendFiles(addresses: any) {
-    const fs = require("fs");
-    const path = require("path");
-
     const contractsDir = path.join(__dirname, "..", "..", "src", "constants");
 
     if (!fs.existsSync(contractsDir)) {
@@ -101,12 +103,19 @@ async function saveFrontendFiles(addresses: any) {
         JSON.stringify(addresses, undefined, 2)
     );
 
+    let pairAbi;
+    try {
+        pairAbi = (await artifacts.readArtifact("UniswapV2Pair")).abi;
+    } catch (e) {
+        console.warn("⚠️ Warning: UniswapV2Pair artifact not found directly. Checking alternate...");
+    }
+
     const contractsInfo = {
-        Factory: (await artifacts.readArtifactSync("UniswapV2Factory")).abi,
-        Router: (await artifacts.readArtifactSync("UniswapV2Router02")).abi,
-        Multicall: (await artifacts.readArtifactSync("Multicall")).abi,
-        ERC20: (await artifacts.readArtifactSync("MriyaFiToken")).abi,
-        Pair: (await artifacts.readArtifactSync("UniswapV2Pair")).abi
+        Factory: (await artifacts.readArtifact("UniswapV2Factory")).abi,
+        Router: (await artifacts.readArtifact("UniswapV2Router02")).abi,
+        Multicall: (await artifacts.readArtifact("Multicall")).abi,
+        ERC20: (await artifacts.readArtifact("MriyaFiToken")).abi,
+        Pair: pairAbi || [] 
     };
 
     fs.writeFileSync(
@@ -114,12 +123,12 @@ async function saveFrontendFiles(addresses: any) {
         JSON.stringify(contractsInfo, undefined, 2)
     );
 
-    console.log(`Config files saved to: ${contractsDir}`);
+    console.log(` 💾 Config files saved to: ${contractsDir}`);
 }
 
 main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

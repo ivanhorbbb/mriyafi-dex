@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { TOKENS } from '../constants/tokens';
 import contractAbi from '../constants/contract-abi.json';
 
-export const useTokenBalances = (provider, account) => {
+export const useTokenBalances = (provider, account, refreshTrigger = 0) => {
     const [balances, setBalances] = useState({});
     const [loading, setLoading] = useState(true);
 
@@ -65,12 +65,12 @@ export const useTokenBalances = (provider, account) => {
         if (provider && account) {
             fetchBalances();
 
-            const interval = setInterval(fetchBalances, 15000);
+            const interval = setInterval(fetchBalances, 1000);
             return () => clearInterval(interval);
         } else {
             setLoading(false);
         }
-    }, [provider, account, fetchBalances]);
+    }, [provider, account, fetchBalances, refreshTrigger]);
 
     return { balances, loading };
 };

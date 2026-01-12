@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import logoImg from '../assets/img/brand/logo.png'; 
+import { Wallet, LogOut, ChevronDown } from 'lucide-react';
 
 const formatAddress = (addr) => {
     return addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length-4)}` : '';
 }
 
-const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connectWallet }) => {
+const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connectWallet, disconnectWallet  }) => {
     const tabsRef = useRef({});
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, opacity: 0});
 
@@ -98,18 +99,56 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                     </button>
 
                     {/* CONNECT WALLET */}
-                    <button
-                        onClick={connectWallet}
-                        className={`
-                            px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg
-                            ${account 
-                                ? 'bg-[#1a2c38] text-[#00d4ff] border border-[#00d4ff]/30 cursor-default' 
-                                : 'bg-gradient-to-r from-[#00d4ff] to-[#0066ff] text-white hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:scale-105 active:scale-95'
-                            }
-                        `}
-                    >
-                        {account ? formatAddress(account) : t.connect}
-                    </button>
+                    <div>
+                        {!account ? (
+                            <button 
+                                onClick={connectWallet}
+                                className="
+                                    group flex items-center gap-2 
+                                    bg-gradient-to-r from-[#00d4ff] to-[#0066ff] 
+                                    text-white font-bold py-2.5 px-6 rounded-xl 
+                                    shadow-[0_0_20px_rgba(0,212,255,0.3)] 
+                                    hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] 
+                                    hover:scale-105 active:scale-95 transition-all duration-300
+                                "
+                            >
+                                <Wallet size={18} className="group-hover:-rotate-12 transition-transform duration-300" />
+                                <span>{t.connect || "Connect"}</span>
+                            </button>
+                        ) : (
+                            <div className="relative group">
+                                <button 
+                                    className="
+                                        flex items-center gap-3 
+                                        bg-[#1a2c38] border border-white/10 
+                                        text-white font-mono font-bold py-2.5 px-5 rounded-xl 
+                                        shadow-lg hover:border-[#00d4ff]/50 transition-all duration-300
+                                    "
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-white/20"></div>
+                                    
+                                    <span className="text-[#00d4ff]">
+                                        {formatAddress(account)}
+                                    </span>
+                                    
+                                    <ChevronDown size={16} className="text-gray-400 group-hover:rotate-180 transition-transform duration-300"/>
+                                </button>
+
+                                <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-[#131823] border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-[200]">
+                                    <div className="px-4 py-2 border-b border-white/5 mb-1">
+                                        <p className="text-xs text-gray-500">MetaMask Connected</p>
+                                    </div>
+                                    <button 
+                                        onClick={disconnectWallet}
+                                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-white/5 flex items-center gap-2 transition-colors"
+                                    >
+                                        <LogOut size={16} />
+                                        Disconnect
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

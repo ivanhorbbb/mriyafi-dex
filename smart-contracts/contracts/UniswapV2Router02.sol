@@ -33,6 +33,11 @@ contract UniswapV2Router02 {
         assert(msg.sender == WETH);
     }
 
+    function _safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value:value}(new bytes(0));
+        require(success, 'MriyaFiRouter: ETH_TRANSFER_FAILED');
+    }
+
     // --- ADD LIQUIDITY ---
 
     function _addLiquidity(
@@ -87,6 +92,31 @@ contract UniswapV2Router02 {
         liquidity = UniswapV2Pair(pair).mint(to);
     }
 
+    function addLiquidityETH(
+        address token,
+        uint amountTokenDesired,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external virtual payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
+        (amountToken, amountETH) = _addLiquidity(
+            token,
+            WETH,
+            amountTokenDesired,
+            msg.value,
+            amountTokenMin,
+            amountETHMin
+        );
+        address pair = UniswapV2Library.pairFor(factory, token, WETH);
+        IERC20(token).safeTransferFrom(msg.sender, pair, amountToken);
+        IWETH(WETH).deposit{value: amountETH}();
+        assert(IWETH(WETH).transfer(pair, amountETH));
+        liquidity = UniswapV2Pair(pair).mint(to);
+        
+        if (msg.value > amountETH) _safeTransferETH(msg.sender, msg.value - amountETH);
+    }
+
     // --- REMOVE LIQUIDITY ---
 
     function removeLiquidity(
@@ -106,6 +136,28 @@ contract UniswapV2Router02 {
         require(amountB >= amountBMin, 'MriyaFiRouter: INSUFFICIENT_B_AMOUNT');
     }
 
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) public virtual ensure(deadline) returns (uint amountToken, uint amountETH) {
+        (amountToken, amountETH) = removeLiquidity(
+            token,
+            WETH,
+            liquidity,
+            amountTokenMin,
+            amountETHMin,
+            address(this),
+            deadline
+        );
+        IERC20(token).safeTransfer(to, amountToken);
+        IWETH(WETH).withdraw(amountETH);
+        _safeTransferETH(to, amountETH);
+    }
+
     // --- SWAP ---
 
     function swapExactTokensForTokens(
@@ -121,6 +173,38 @@ contract UniswapV2Router02 {
         IERC20(path[0]).safeTransferFrom(msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]);
 
         _swap(amounts, path, to);
+    }
+
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        virtual
+        payable
+        ensure(deadline)
+        returns (uint[] memory amounts)
+    {
+        require(path[0] == WETH, 'MriyaFiRouter: INVALID_PATH');
+        amounts = UniswapV2Library.getAmountsOut(factory, msg.value, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'MriyaFiRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        IWETH(WETH).deposit{value: amounts[0]}();
+        assert(IWETH(WETH).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
+        _swap(amounts, path, to);
+    }
+
+    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        virtual
+        ensure(deadline)
+        returns (uint[] memory amounts)
+    {
+        require(path[path.length - 1] == WETH, 'MriyaFiRouter: INVALID_PATH');
+        amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'MriyaFiRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        IERC20(path[0]).safeTransferFrom(
+            msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
+        );
+        _swap(amounts, path, address(this));
+        IWETH(WETH).withdraw(amounts[amounts.length - 1]);
+        _safeTransferETH(to, amounts[amounts.length - 1]);
     }
 
     function _swap(uint256[] memory amounts, address[] memory path, address _to) internal virtual {
@@ -145,5 +229,9 @@ contract UniswapV2Router02 {
 
     function getAmountsOut(uint256 amountIn, address[] memory path) public view returns (uint256[] memory amounts) {
         return UniswapV2Library.getAmountsOut(factory, amountIn, path);
+    }
+
+    function getAmountsIn(uint256 amountOut, address[] memory path) public view returns (uint256[] memory amounts) {
+        return UniswapV2Library.getAmountsIn(factory, amountOut, path);
     }
 }
