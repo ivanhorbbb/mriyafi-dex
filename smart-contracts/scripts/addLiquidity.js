@@ -53,8 +53,6 @@ async function main() {
         const amountA = hre.ethers.parseUnits(amountA_Num.toFixed(tokenA.decimals === 18 ? 6 : 2), tokenA.decimals);
         const amountB = hre.ethers.parseUnits(amountB_Num.toFixed(tokenB.decimals === 18 ? 6 : 2), tokenB.decimals);
 
-        // 1. СПЕЦІАЛЬНА ПЕРЕВІРКА ДЛЯ WETH
-        // Це гарантує, що в контракті WETH буде лежати реальний ETH
         if (tokenA.symbol === "WETH") await ensureWETHBalance(tokenA.address, amountA);
         if (tokenB.symbol === "WETH") await ensureWETHBalance(tokenB.address, amountB);
 

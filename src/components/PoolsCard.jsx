@@ -2,68 +2,80 @@ import React, { useState, useCallback, memo } from 'react';
 import { Search, Flame, Sparkles, ChevronRight } from 'lucide-react';
 import PoolDetail from './PoolDetail';
 
-import eth from '../assets/img/tokens/eth.png';
+// import eth from '../assets/img/tokens/eth.png';
 import usdc from '../assets/img/tokens/usdc.png';
 import wbtc from '../assets/img/tokens/wrapped-btc.png';
 import mfi from '../assets/img/tokens/mfi.png';
 import weth from '../assets/img/tokens/wrapped-eth.png';
+import usdt from '../assets/img/tokens/usdt.png';
 
 const POOLS_DATA = [
         {
             id: 1,
-            pair: 'ETH / USDC',
-            version: 'V3',
-            imgs: [eth, usdc],
-            tvl: '$450M',
-            vol: '$120M',
-            apr: '18.5%',
+            token0: { symbol: 'MFI', logo: mfi },
+            token1: { symbol: 'USDC', logo: usdc },
+            version: 'V2',
+            tvl: '$1.2M',
+            vol: '$450K',
+            apr: '124.5%',
             isHot: true,
             chartColor: '#f0dfae'
         },
         {
             id: 2,
-            pair: 'WBTC / ETH',
-            version: 'V3',
-            imgs: [wbtc, eth],
-            tvl: '$210M',
-            vol: '$80M',
-            apr: '4.2%',
-            isHot: false,
-            chartColor: '#00d4ff'
+            token0: { symbol: 'MFI', logo: mfi },
+            token1: { symbol: 'WETH', logo: weth },
+            version: 'V2',
+            tvl: '$850K',
+            vol: '$320K',
+            apr: '98.2%',
+            isHot: true,
+            chartColor: '#f0dfae'
         },
         {
             id: 3,
-            pair: 'MFI / ETH',
-            version: 'V3',
-            imgs: [mfi, eth],
-            tvl: '$55M',
+            token0: { symbol: 'WETH', logo: weth },
+            token1: { symbol: 'USDC', logo: usdc },
+            version: 'V2',
+            tvl: '$45M',
             vol: '$12M',
-            apr: '124.2%',
+            apr: '18.5%',
             isHot: false,
             chartColor: '#00d4ff'
         },
         {
             id: 4,
-            pair: 'ETH / WETH',
-            version: 'V3',
-            imgs: [eth, weth],
-            tvl: '$50M',
-            vol: '$10M',
-            apr: '35.45%',
-            isHot: true,
+            token0: { symbol: 'WBTC', logo: wbtc },
+            token1: { symbol: 'WETH', logo: weth },
+            version: 'V2',
+            tvl: '$21M',
+            vol: '$8M',
+            apr: '5.2%',
+            isHot: false,
+            chartColor: '#00d4ff'
+        },
+        {
+            id: 5,
+            token0: { symbol: 'USDC', logo: usdc },
+            token1: { symbol: 'USDT', logo: usdt },
+            version: 'V2',
+            tvl: '$105M',
+            vol: '$50M',
+            apr: '2.1%',
+            isHot: false,
+            chartColor: '#00d4ff'
+        },
+        {
+            id: 6,
+            token0: { symbol: 'MFI', logo: mfi },
+            token1: { symbol: 'WBTC', logo: wbtc },
+            version: 'V2',
+            tvl: '$600K',
+            vol: '$150K',
+            apr: '85.4%',
+            isHot: false,
             chartColor: '#f0dfae'
         },
-        { 
-            id: 5, 
-            pair: 'USDC / USDT', 
-            version: 'V3', 
-            imgs: [usdc, usdc], 
-            tvl: '$900M', 
-            vol: '$450M', 
-            apr: '2.1%', 
-            isHot: false, 
-            chartColor: '#00d4ff' 
-        }
     ];
 
     const MiniChart = memo(({ color, id }) => (
@@ -123,12 +135,12 @@ const POOLS_DATA = [
                     <div className="flex flex-col gap-3 w-full md:w-auto">
                         <div className="flex items-center gap-4">
                             <div className="flex -space-x-3">
-                                <img src={pool.imgs[0]} alt="c1" className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md" loading="lazy" />
-                                <img src={pool.imgs[1]} alt="c2" className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md" loading="lazy" />
+                                <img src={pool.token0.logo} alt={pool.token0.symbol} className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md bg-black" loading="lazy" />
+                                <img src={pool.token1.logo} alt={pool.token1.symbol} className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md bg-black" loading="lazy" />
                             </div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-bold text-white tracking-tight">{pool.pair}</span>
-                                <span className="text-sm font-bold text-gray-500">{pool.version}</span>
+                                <span className="text-2xl font-bold text-white tracking-tight">{pool.token0.symbol} / {pool.token1.symbol}</span>
+                                <span className="text-m font-bold text-gray-500">{pool.version}</span>
                             </div>
                         </div>
 
@@ -184,12 +196,24 @@ const PoolsCard = ({ t }) => {
         setSelectedPool(null);
     }, []);
 
+    const safeT = t || {
+        title: 'Liquidity Pools',
+        subtitle: 'Earn Fees',
+        searchPlaceholder: 'Search pools...',
+        hot: 'Hot Pools',
+        tvl: 'TVL',
+        vol: 'Vol',
+        apr: 'APR',
+        deposit: 'Deposit',
+        poolDetail: {}
+    };
+
     if (selectedPool) {
         return (
             <PoolDetail
                 pool={selectedPool}
                 onBack={handleBack}
-                t={t.poolDetail || {
+                t={safeT.poolDetail || {
                     back: 'Back', tvl: 'TVL', vol: 'Vol', fees: 'Fees', apr: 'APR',
                     position: 'Position', liquidity: 'Liquidity', feesEarned: 'Earned',
                     add: 'Add', remove: 'Remove', transactions: 'Transactions'
@@ -215,7 +239,7 @@ const PoolsCard = ({ t }) => {
                     <div className="pointer-events-auto relative">
                         <div className="text-center mb-8">
                             <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">
-                                {t.title} <span className="text-gray-500 font-normal">/ {t.subtitle}</span>
+                                {safeT.title} <span className="text-gray-500 font-normal">/ {safeT.subtitle}</span>
                             </h2>
                         </div>
 
@@ -226,12 +250,12 @@ const PoolsCard = ({ t }) => {
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder={t.searchPlaceholder} 
+                                    placeholder={safeT.searchPlaceholder} 
                                     className="w-full bg-[#0a0e17]/50 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/40 focus:bg-[#0a0e17]/70 backdrop-blur-md transition-colors shadow-lg"
                                 />
                             </div>
                             <button className="flex items-center gap-2 bg-[#0a0e17]/50 border border-white/10 rounded-2xl px-6 py-3 text-white hover:bg-white/5 transition-colors backdrop-blur-md shadow-lg font-medium whitespace-nowrap">
-                                {t.hot} <Flame size={22} className="text-orange-500 fill-orange-500" />
+                                {safeT.hot} <Flame size={22} className="text-orange-500 fill-orange-500" />
                                 <ChevronRight size={20} className="text-gray-400 ml-1" />
                             </button>
                         </div>
@@ -241,7 +265,7 @@ const PoolsCard = ({ t }) => {
                 {/* List Section */}
                 <div className="h-full overflow-y-auto overflow-x-hidden px-8 sm:px-10 pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
                     {POOLS_DATA.map((pool) => (
-                        <PoolItem key={pool.id} pool={pool} t={t} onSelect={handleSelectPool} />
+                        <PoolItem key={pool.id} pool={pool} t={safeT} onSelect={handleSelectPool} />
                     ))}
                 </div>
             </div>
