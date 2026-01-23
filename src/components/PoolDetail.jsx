@@ -212,7 +212,8 @@ const PoolDetail = ({ pool, onBack, t }) => {
     useEffect(() => {
         fetchBalances();
         fetchTransactions(); 
-    }, []); 
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // --- HANDLERS FOR MODAL ---
     const handleOpenModal = (type) => {

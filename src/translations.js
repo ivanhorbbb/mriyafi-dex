@@ -38,6 +38,11 @@ export const translations = {
             tvl: 'TVL',
             vol: 'Volume 24h',
             apr: 'APR',
+            createPool: 'Create Pool',
+            createPoolTitle: 'Create a new liquidity pool',
+            initializePool: 'Initialize Pool',
+            noPoolsFound: 'No pools found.',
+            tryAdjustingFilters: 'Create new one?',
 
             poolDetail: {
                 back: 'Back to pools',
@@ -115,6 +120,11 @@ export const translations = {
             tvl: 'Ліквідність (TVL)',
             vol: 'Об\'єм 24г',
             apr: 'Річних',
+            createPool: 'Створити Пул',
+            createPoolTitle: 'Створити новий пул ліквідності',
+            initializePool: 'Ініціалізувати Пул',
+            noPoolsFound: 'Пулів не знайдено.',
+            tryAdjustingFilters: 'Створити новий?',
             poolDetail: {
                 back: 'Назад до пулів',
                 tvl: 'Ліквідність (TVL)',

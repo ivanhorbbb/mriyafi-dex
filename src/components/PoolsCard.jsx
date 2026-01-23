@@ -1,8 +1,9 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useEffect, useMemo, memo } from 'react';
 import PoolDetail from './PoolDetail';
 
 import PoolItem from './pool/PoolItem';
 import PoolsHeader from './pool/PoolsHeader';
+import CreatePoolModal from './pool/CreatePoolModal';
 
 import usdc from '../assets/img/tokens/usdc.png';
 import wbtc from '../assets/img/tokens/wrapped-btc.png';
@@ -10,7 +11,36 @@ import mfi from '../assets/img/tokens/mfi.png';
 import weth from '../assets/img/tokens/wrapped-eth.png';
 import usdt from '../assets/img/tokens/usdt.png';
 
-const POOLS_DATA = [
+const parseAmount = (str) => {
+    if (!str) return 0;
+    const cleanStr = str.toString().replace(/[$,]/g, '');
+    const val = parseFloat(cleanStr);
+    
+    if (str.toString().includes('M')) return val * 1000000;
+    if (str.toString().includes('K')) return val * 1000;
+    
+    return val;
+};
+
+const parseApr = (str) => {
+    if (!str) return 0;
+    return parseFloat(str.toString().replace('%', ''));
+};
+
+const enrichPoolData = (pool) => {
+    const apr = parseApr(pool.apr);
+    const tvl = parseAmount(pool.tvl);
+    
+    const isHot = apr >= 80 || tvl >= 1000000;
+
+    return {
+        ...pool,
+        isHot: isHot,
+        chartColor: isHot ? '#f0dfae' : '#00d4ff'
+    };
+};
+
+const RAW_POOLS_DATA = [
     {
         id: 1,
         token0: { symbol: 'MFI', logo: mfi },
@@ -18,9 +48,7 @@ const POOLS_DATA = [
         version: 'V2',
         tvl: '$1.2M',
         vol: '$450K',
-        apr: '124.5%',
-        isHot: true,
-        chartColor: '#f0dfae'
+        apr: '124.5%'
     },
     {
         id: 2,
@@ -29,9 +57,7 @@ const POOLS_DATA = [
         version: 'V2',
         tvl: '$850K',
         vol: '$320K',
-        apr: '98.2%',
-        isHot: true,
-        chartColor: '#f0dfae'
+        apr: '98.2%'
     },
     {
         id: 3,
@@ -40,20 +66,16 @@ const POOLS_DATA = [
         version: 'V2',
         tvl: '$45M',
         vol: '$12M',
-        apr: '18.5%',
-        isHot: false,
-        chartColor: '#00d4ff'
+        apr: '18.5%'
     },
     {
         id: 4,
         token0: { symbol: 'WBTC', logo: wbtc },
         token1: { symbol: 'WETH', logo: weth },
         version: 'V2',
-        tvl: '$21M',
+        tvl: '$900K',
         vol: '$8M',
-        apr: '5.2%',
-        isHot: false,
-        chartColor: '#00d4ff'
+        apr: '5.2%'
     },
     {
         id: 5,
@@ -62,9 +84,7 @@ const POOLS_DATA = [
         version: 'V2',
         tvl: '$105M',
         vol: '$50M',
-        apr: '2.1%',
-        isHot: false,
-        chartColor: '#00d4ff'
+        apr: '2.1%'
     },
     {
         id: 6,
@@ -73,14 +93,26 @@ const POOLS_DATA = [
         version: 'V2',
         tvl: '$600K',
         vol: '$150K',
-        apr: '85.4%',
-        isHot: false,
-        chartColor: '#f0dfae'
+        apr: '70.4%'
     },
 ];
 
 const PoolsCard = ({ t }) => {
+    const [allPools, setAllPools] = useState(() => {
+        const savedPools = localStorage.getItem('userPools');
+        const baseData = savedPools ? JSON.parse(savedPools) : RAW_POOLS_DATA;
+        
+        return baseData.map(enrichPoolData);
+    });
+
     const [selectedPool, setSelectedPool] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isHotFilter, setIsHotFilter] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('userPools', JSON.stringify(allPools));
+    }, [allPools]);
 
     const handleSelectPool = useCallback((pool) => {
         setSelectedPool(pool);
@@ -89,6 +121,51 @@ const PoolsCard = ({ t }) => {
     const handleBack = useCallback(() => {
         setSelectedPool(null);
     }, []);
+
+    const handleCreatePool = (tokenA, tokenB) => {
+        const exists = allPools.find(p => 
+            (p.token0.symbol === tokenA.symbol && p.token1.symbol === tokenB.symbol) ||
+            (p.token0.symbol === tokenB.symbol && p.token1.symbol === tokenA.symbol)
+        );
+
+        if (exists) {
+            setSelectedPool(exists);
+            return;
+        }
+        
+        let newPool = {
+            id: Date.now(),
+            token0: { symbol: tokenA.symbol, logo: tokenA.img },
+            token1: { symbol: tokenB.symbol, logo: tokenB.img },
+            version: 'V2',
+            tvl: '$0',
+            vol: '$0',
+            apr: '0%'
+        };
+        newPool = enrichPoolData(newPool);
+
+        setAllPools(prevPools => [newPool, ...prevPools]);
+        setSelectedPool(newPool);
+    };
+
+    const filteredPools = useMemo(() => {
+        if (!allPools) return [];
+
+        return allPools.filter(pool => {
+            const symbol0 = pool.token0?.symbol || '';
+            const symbol1 = pool.token1?.symbol || '';
+            
+            const query = searchQuery.toLowerCase().trim();
+
+            const matchesSearch = 
+                symbol0.toLowerCase().includes(query) ||
+                symbol1.toLowerCase().includes(query);
+            
+            const matchesHot = isHotFilter ? pool.isHot : true;
+
+            return matchesSearch && matchesHot;
+        });
+    }, [searchQuery, isHotFilter, allPools]);
 
     const safeT = t || {
         title: 'Liquidity Pools',
@@ -99,6 +176,11 @@ const PoolsCard = ({ t }) => {
         vol: 'Vol',
         apr: 'APR',
         deposit: 'Deposit',
+        createPool: 'Create Pool',
+        createPoolTitle: 'Create a new liquidity pool',
+        initializePool: 'Initialize Pool',
+        noPoolsFound: 'No pools found.',
+        tryAdjustingFilters: 'Create new one?',
         poolDetail: {}
     };
 
@@ -110,7 +192,13 @@ const PoolsCard = ({ t }) => {
                 t={safeT.poolDetail || {
                     back: 'Back', tvl: 'TVL', vol: 'Vol', fees: 'Fees', apr: 'APR',
                     position: 'Position', liquidity: 'Liquidity', feesEarned: 'Earned',
-                    add: 'Add', remove: 'Remove', transactions: 'Transactions'
+                    add: 'Add', remove: 'Remove', transactions: 'Transactions',
+                    modal: { 
+                        addLiquidity: 'Add Liquidity', removeLiquidity: 'Remove Liquidity',
+                        input: 'Input', balance: 'Balance', yourLiquidity: 'Your LP', 
+                        shareOfPool: 'Share', supply: 'Supply', remove: 'Remove',
+                        amountToRemove: 'Amount to Remove'
+                    }
                 }}
             />
         );
@@ -129,13 +217,32 @@ const PoolsCard = ({ t }) => {
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
                 
                 {/* Header Component */}
-                <PoolsHeader t={safeT} />
+                <PoolsHeader 
+                    t={safeT} 
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    isHotFilter={isHotFilter}
+                    setIsHotFilter={setIsHotFilter}
+                    onCreatePool={() => setIsCreateModalOpen(true)}
+                />
 
                 {/* List Section */}
                 <div className="h-full overflow-y-auto overflow-x-hidden px-8 sm:px-10 pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
-                    {POOLS_DATA.map((pool) => (
-                        <PoolItem key={pool.id} pool={pool} t={safeT} onSelect={handleSelectPool} />
-                    ))}
+                    {filteredPools && filteredPools.length > 0 ? (
+                        filteredPools.map((pool) => (
+                            <PoolItem key={pool.id} pool={pool} t={safeT} onSelect={handleSelectPool} />
+                        ))
+                    ) : (
+                        <div className="text-center text-gray-500 mt-20 text-xl">
+                            {safeT.noPoolsFound} <br/>
+                            <span 
+                                className="text-[#00d4ff] cursor-pointer hover:underline"
+                                onClick={() => setIsCreateModalOpen(true)}
+                            >
+                                {safeT.tryAdjustingFilters}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -143,6 +250,13 @@ const PoolsCard = ({ t }) => {
                 .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 .custom-scrollbar::-webkit-scrollbar { display: none; }
             `}</style>
+
+            <CreatePoolModal 
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onCreate={handleCreatePool}
+                t={safeT}
+            />
         </div>
     );
 };

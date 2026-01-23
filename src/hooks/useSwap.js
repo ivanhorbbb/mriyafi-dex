@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import contractAddresses from '../constants/contract-address.json';
-import contractAbi from '../constants/contract-abi.json';
+// import contractAbi from '../constants/contract-abi.json';
 
 const ROUTER_ADDRESS = contractAddresses.Router;
 const WETH_ADDRESS = contractAddresses.WETH;
@@ -119,7 +119,7 @@ export const useSwap = (provider, account) => {
 
             if (!isNativeIn) {
                 const tokenAddress = cleanPath[0];
-                const tokenContract = new ethers.Contract(tokenAddress, contractAbi.ERC20, signer);
+                const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
                 
                 const allowance = await tokenContract.allowance(account, ROUTER_ADDRESS);
                 

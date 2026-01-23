@@ -1,15 +1,24 @@
 import { memo, useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
 import MiniChart from '../ui/MiniChart';
+import { usePoolData } from '../../hooks/usePoolData';
 
 const PoolItem = ({ pool, t, onSelect }) => {
-    const handleClick = useCallback(() => {
-        onSelect(pool);
-    }, [onSelect, pool]);
+    const { tvl, vol, apr, isHot: isRealHot, loading } = usePoolData(pool.token0, pool.token1);
+    
+    const displayTVL = loading ? '...' : tvl;
+    const displayVOL = loading ? '...' : vol;
+    const displayAPR = loading ? '...' : apr;
 
-    const borderColor = pool.isHot ? 'border-[#f0dfae]' : 'border-[#00d4ff]';
-    const bgColor = pool.isHot ? 'bg-[#f0dfae]' : 'bg-[#00d4ff]';
-    const textColor = pool.isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
+    const isHot = loading ? false : isRealHot;
+
+    const handleClick = useCallback(() => {
+        onSelect({ ...pool, tvl, vol, apr, isHot });
+    }, [onSelect, pool, tvl, vol, apr, isHot]);
+
+    const borderColor = isHot ? 'border-[#f0dfae]' : 'border-[#00d4ff]';
+    const bgColor = isHot ? 'bg-[#f0dfae]' : 'bg-[#00d4ff]';
+    const textColor = isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
 
     return (
         <div 
@@ -21,14 +30,14 @@ const PoolItem = ({ pool, t, onSelect }) => {
             <div className={`
                 absolute -bottom-6 left-8 right-8 h-full rounded-[2.5rem] border z-[-20]
                 transition-transform duration-500 scale-95 opacity-40
-                ${borderColor}/20 ${bgColor}/5
+                ${pool.isHot ? 'border-[#f0dfae]/20 bg-[#f0dfae]/5' : 'border-[#00d4ff]/20 bg-[#00d4ff]/5'}
             `}></div>
             
             {/* LAYER 2 Shadow */}
             <div className={`
                 absolute -bottom-3 left-4 right-4 h-full rounded-[2.5rem] border z-[-10]
                 transition-transform duration-300 scale-[0.98] shadow-lg bg-[#131823]
-                ${borderColor}/40
+                ${pool.isHot ? 'border-[#f0dfae]/40' : 'border-[#00d4ff]/40'}
             `}></div>
 
             {/* MAIN LAYER */}
@@ -56,13 +65,13 @@ const PoolItem = ({ pool, t, onSelect }) => {
                         </div>
 
                         <div className="flex items-center gap-3 text-xs md:text-sm text-gray-400 font-mono mt-1">
-                            <span>{t.tvl}: <span className="text-white font-semibold">{pool.tvl}</span></span>
+                            <span>{t.tvl}: <span className="text-white font-semibold">{displayTVL}</span></span>
                             <span className="text-gray-600">|</span>
-                            <span>{t.vol}: <span className="text-white font-semibold">{pool.vol}</span></span>
+                            <span>{t.vol}: <span className="text-white font-semibold">{displayVOL}</span></span>
                             <span className="text-gray-600">|</span>
-                            <span className={`${textColor} font-bold flex items-center gap-1`}>
-                                {t.apr}: {pool.apr}
-                                {pool.isHot && <Sparkles size={12} />}
+                            <span className={`${isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]'} font-bold flex items-center gap-1`}>
+                                {t.apr}: {displayAPR}
+                                {isHot && <Sparkles size={12} />}
                             </span>
                         </div>
                     </div>
