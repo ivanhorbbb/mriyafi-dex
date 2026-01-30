@@ -75,7 +75,8 @@ async function main() {
                 amountB,
                 0, 0,
                 deployer.address,
-                deadline
+                deadline,
+                { gasLimit: 5000000 }
             );
             await tx3.wait();
 

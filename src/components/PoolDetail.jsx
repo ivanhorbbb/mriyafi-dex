@@ -14,19 +14,13 @@ const PoolDetail = ({ pool, onBack, t }) => {
 
     const token0 = pool?.token0 || {};
     const token1 = pool?.token1 || {};
+    
     const symbolA_Name = token0.symbol || '';
     const symbolB_Name = token1.symbol || '';
+    const addressA = token0.address;
+    const addressB = token1.address;
 
-    const getAddress = (sym) => {
-        if (!sym) return null;
-        if (sym === 'ETH') return CONTRACTS.TOKENS['WETH']; 
-        return CONTRACTS.TOKENS[sym];
-    };
-
-    const addressA = getAddress(symbolA_Name);
-    const addressB = getAddress(symbolB_Name);
-
-    const { reserves, price, loading } = usePoolData(addressA, addressB);
+    const { reserves, price, loading } = usePoolData(token0, token1);
 
     const [balanceA, setBalanceA] = useState(0); 
     const [balanceB, setBalanceB] = useState(0); 
@@ -46,7 +40,9 @@ const PoolDetail = ({ pool, onBack, t }) => {
     const [isTransacting, setIsTransacting] = useState(false);
     const [statusMsg, setStatusMsg] = useState('');
 
-    const isPoolEmpty = parseFloat(reserves.reserveA) < 1.0 || parseFloat(reserves.reserveB) < 1.0;
+    const resA = reserves?.reserveA || 0;
+    const resB = reserves?.reserveB || 0;
+    const isPoolEmpty = parseFloat(resA) < 0.000001 || parseFloat(resB) < 0.000001;
 
     // --- HELPER FUNCTIONS ---
     const formatTokenAmount = (val) => val.toLocaleString('en-US', {maximumFractionDigits: 6});
@@ -71,45 +67,65 @@ const PoolDetail = ({ pool, onBack, t }) => {
     };
 
     const fetchBalances = useCallback(async () => {
-        if (window.ethereum && addressA && addressB) {
+        if (window.ethereum) {
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const userAddress = await signer.getAddress();
 
-                const tokenAContract = new ethers.Contract(addressA, ERC20_ABI, provider);
-                const tokenBContract = new ethers.Contract(addressB, ERC20_ABI, provider);
-                
-                const [balA, balB, decA, decB] = await Promise.all([
-                    tokenAContract.balanceOf(userAddress),
-                    tokenBContract.balanceOf(userAddress),
-                    tokenAContract.decimals(),
-                    tokenBContract.decimals()
-                ]);
+                let balA = BigInt(0);
+                let decA = 18;
+
+                if (token0.symbol === 'ETH') {
+                    balA = await provider.getBalance(userAddress);
+                    decA = 18;
+                } else if (token0.address && ethers.isAddress(token0.address)) {
+                    const tokenAContract = new ethers.Contract(token0.address, ERC20_ABI, provider);
+                    balA = await tokenAContract.balanceOf(userAddress);
+                    decA = await tokenAContract.decimals();
+                }
+
+                let balB = BigInt(0);
+                let decB = 18;
+
+                if (token1.symbol === 'ETH') {
+                    balB = await provider.getBalance(userAddress);
+                    decB = 18;
+                } else if (token1.address && ethers.isAddress(token1.address)) {
+                    const tokenBContract = new ethers.Contract(token1.address, ERC20_ABI, provider);
+                    balB = await tokenBContract.balanceOf(userAddress);
+                    decB = await tokenBContract.decimals();
+                }
                 
                 setBalanceA(parseFloat(ethers.formatUnits(balA, decA)));
                 setBalanceB(parseFloat(ethers.formatUnits(balB, decB)));
 
                 const factoryAbi = ["function getPair(address, address) view returns (address)"];
                 const factory = new ethers.Contract(CONTRACTS.FACTORY_ADDRESS, factoryAbi, provider);
-                const pairAddr = await factory.getPair(addressA, addressB);
                 
-                if (pairAddr && pairAddr !== ethers.ZeroAddress) {
-                    const pairContract = new ethers.Contract(pairAddr, PAIR_ABI, provider);
-                    const lpBal = await pairContract.balanceOf(userAddress);
-                    const totalSup = await pairContract.totalSupply();
+                const addrA = token0.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : token0.address;
+                const addrB = token1.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : token1.address;
 
-                    setLpBalance(parseFloat(ethers.formatUnits(lpBal, 18))); 
-                    setTotalSupply(parseFloat(ethers.formatUnits(totalSup, 18)));
-                } else {
-                    setLpBalance(0);
-                    setTotalSupply(0);
+                if (addrA && addrB) {
+                    const pairAddr = await factory.getPair(addrA, addrB);
+                    
+                    if (pairAddr && pairAddr !== ethers.ZeroAddress) {
+                        const pairContract = new ethers.Contract(pairAddr, PAIR_ABI, provider);
+                        const lpBal = await pairContract.balanceOf(userAddress);
+                        const totalSup = await pairContract.totalSupply();
+
+                        setLpBalance(parseFloat(ethers.formatUnits(lpBal, 18))); 
+                        setTotalSupply(parseFloat(ethers.formatUnits(totalSup, 18)));
+                    } else {
+                        setLpBalance(0);
+                        setTotalSupply(0);
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching balances:", error);
             }
         }
-    }, [addressA, addressB]);
+    }, [token0, token1]);
 
     const fetchTransactions = useCallback(async () => {
         if (!window.ethereum || !addressA || !addressB) return;

@@ -1,10 +1,10 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import MiniChart from '../ui/MiniChart';
 import { usePoolData } from '../../hooks/usePoolData';
 
-const PoolItem = ({ pool, t, onSelect }) => {
-    const { tvl, vol, apr, isHot: isRealHot, loading } = usePoolData(pool.token0, pool.token1);
+const PoolItem = ({ pool, t, onSelect, onPoolDataUpdate }) => {
+    const { tvl, vol, apr, isHot: isRealHot, loading, reserves } = usePoolData(pool.token0, pool.token1);
     
     const displayTVL = loading ? '...' : tvl;
     const displayVOL = loading ? '...' : vol;
@@ -13,12 +13,26 @@ const PoolItem = ({ pool, t, onSelect }) => {
     const isHot = loading ? false : isRealHot;
 
     const handleClick = useCallback(() => {
-        onSelect({ ...pool, tvl, vol, apr, isHot });
-    }, [onSelect, pool, tvl, vol, apr, isHot]);
+        onSelect({ ...pool, tvl, vol, apr, isHot, reserves });
+    }, [onSelect, pool, tvl, vol, apr, isHot, reserves]);
 
+    useEffect(() => {
+        if (!loading && onPoolDataUpdate) {
+            onPoolDataUpdate(pool.id, {
+                tvl: displayTVL,
+                vol: displayVOL,
+                apr: displayAPR,
+                isHot: isHot,
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading, displayTVL, displayVOL, displayAPR, isHot]);
+
+    const chartColor = isHot ? '#f0dfae' : '#00d4ff';
     const borderColor = isHot ? 'border-[#f0dfae]' : 'border-[#00d4ff]';
     const bgColor = isHot ? 'bg-[#f0dfae]' : 'bg-[#00d4ff]';
     const textColor = isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
+    const glowColor = isHot ? '#f0dfae' : '#00d4ff';
 
     return (
         <div 
@@ -30,21 +44,21 @@ const PoolItem = ({ pool, t, onSelect }) => {
             <div className={`
                 absolute -bottom-6 left-8 right-8 h-full rounded-[2.5rem] border z-[-20]
                 transition-transform duration-500 scale-95 opacity-40
-                ${pool.isHot ? 'border-[#f0dfae]/20 bg-[#f0dfae]/5' : 'border-[#00d4ff]/20 bg-[#00d4ff]/5'}
+                ${isHot ? 'border-[#f0dfae]/20 bg-[#f0dfae]/5' : 'border-[#00d4ff]/20 bg-[#00d4ff]/5'}
             `}></div>
             
             {/* LAYER 2 Shadow */}
             <div className={`
                 absolute -bottom-3 left-4 right-4 h-full rounded-[2.5rem] border z-[-10]
                 transition-transform duration-300 scale-[0.98] shadow-lg bg-[#131823]
-                ${pool.isHot ? 'border-[#f0dfae]/40' : 'border-[#00d4ff]/40'}
+                ${isHot ? 'border-[#f0dfae]/40' : 'border-[#00d4ff]/40'}
             `}></div>
 
             {/* MAIN LAYER */}
             <div className={`
                 relative z-10 rounded-[2.5rem] p-6 border transition-all duration-300
                 bg-[#131823] overflow-hidden
-                ${pool.isHot 
+                ${isHot 
                     ? `border-[#f0dfae]/80 shadow-[0_0_20px_rgba(240,223,174,0.1)] group-hover:shadow-[0_0_30px_rgba(240,223,174,0.2)]`
                     : `border-[#00d4ff]/70 shadow-[0_0_20px_rgba(0,212,255,0.1)] group-hover:shadow-[0_0_30px_rgba(0,212,255,0.2)]`
                 }
@@ -69,7 +83,7 @@ const PoolItem = ({ pool, t, onSelect }) => {
                             <span className="text-gray-600">|</span>
                             <span>{t.vol}: <span className="text-white font-semibold">{displayVOL}</span></span>
                             <span className="text-gray-600">|</span>
-                            <span className={`${isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]'} font-bold flex items-center gap-1`}>
+                            <span className={`${textColor} font-bold flex items-center gap-1`}>
                                 {t.apr}: {displayAPR}
                                 {isHot && <Sparkles size={12} />}
                             </span>
@@ -79,7 +93,7 @@ const PoolItem = ({ pool, t, onSelect }) => {
                     {/* RIGHT PART */}
                     <div className="flex flex-col items-end gap-4 w-full md:w-auto min-w-[180px]">
                         <div className="w-full md:w-48 h-16 opacity-90 relative">
-                           <MiniChart color={pool.chartColor} id={pool.id} />
+                           <MiniChart color={chartColor} id={pool.id} />
                         </div>
 
                         <button 
@@ -96,7 +110,7 @@ const PoolItem = ({ pool, t, onSelect }) => {
                 <div 
                     className="absolute -right-10 -top-10 w-64 h-64 rounded-full pointer-events-none opacity-15"
                     style={{
-                        background: `radial-gradient(circle, ${pool.isHot ? '#f0dfae' : '#00d4ff'} 0%, transparent 70%)`,
+                        background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
                         transform: 'translateZ(0)'
                     }}
                 />

@@ -46,6 +46,8 @@ export type { UniswapV2Factory } from "./contracts/UniswapV2Factory";
 export { UniswapV2Factory__factory } from "./factories/contracts/UniswapV2Factory__factory";
 export type { UniswapV2Pair } from "./contracts/UniswapV2Pair";
 export { UniswapV2Pair__factory } from "./factories/contracts/UniswapV2Pair__factory";
+export type { IUniswapV2Pair } from "./contracts/UniswapV2Router02.sol/IUniswapV2Pair";
+export { IUniswapV2Pair__factory } from "./factories/contracts/UniswapV2Router02.sol/IUniswapV2Pair__factory";
 export type { IWETH } from "./contracts/UniswapV2Router02.sol/IWETH";
 export { IWETH__factory } from "./factories/contracts/UniswapV2Router02.sol/IWETH__factory";
 export type { UniswapV2Router02 } from "./contracts/UniswapV2Router02.sol/UniswapV2Router02";

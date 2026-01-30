@@ -5,6 +5,8 @@ import PoolItem from './pool/PoolItem';
 import PoolsHeader from './pool/PoolsHeader';
 import CreatePoolModal from './pool/CreatePoolModal';
 
+import { TOKENS } from '../constants/tokens';
+
 import usdc from '../assets/img/tokens/usdc.png';
 import wbtc from '../assets/img/tokens/wrapped-btc.png';
 import mfi from '../assets/img/tokens/mfi.png';
@@ -31,7 +33,7 @@ const enrichPoolData = (pool) => {
     const apr = parseApr(pool.apr);
     const tvl = parseAmount(pool.tvl);
     
-    const isHot = apr >= 80 || tvl >= 1000000;
+    const isHot = tvl > 50000 || apr > 20;
 
     return {
         ...pool,
@@ -40,70 +42,105 @@ const enrichPoolData = (pool) => {
     };
 };
 
+const injectTokenData = (tokenPart) => {
+    const foundToken = TOKENS.find(t => t.symbol === tokenPart.symbol);
+    if (foundToken) {
+        return { ...foundToken, ...tokenPart };
+    }
+    return tokenPart;
+};
+
 const RAW_POOLS_DATA = [
     {
         id: 1,
         token0: { symbol: 'MFI', logo: mfi },
         token1: { symbol: 'USDC', logo: usdc },
         version: 'V2',
-        tvl: '$1.2M',
-        vol: '$450K',
-        apr: '124.5%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
     {
         id: 2,
         token0: { symbol: 'MFI', logo: mfi },
         token1: { symbol: 'WETH', logo: weth },
         version: 'V2',
-        tvl: '$850K',
-        vol: '$320K',
-        apr: '98.2%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
     {
         id: 3,
         token0: { symbol: 'WETH', logo: weth },
         token1: { symbol: 'USDC', logo: usdc },
         version: 'V2',
-        tvl: '$45M',
-        vol: '$12M',
-        apr: '18.5%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
     {
         id: 4,
         token0: { symbol: 'WBTC', logo: wbtc },
         token1: { symbol: 'WETH', logo: weth },
         version: 'V2',
-        tvl: '$900K',
-        vol: '$8M',
-        apr: '5.2%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
     {
         id: 5,
         token0: { symbol: 'USDC', logo: usdc },
         token1: { symbol: 'USDT', logo: usdt },
         version: 'V2',
-        tvl: '$105M',
-        vol: '$50M',
-        apr: '2.1%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
     {
         id: 6,
         token0: { symbol: 'MFI', logo: mfi },
         token1: { symbol: 'WBTC', logo: wbtc },
         version: 'V2',
-        tvl: '$600K',
-        vol: '$150K',
-        apr: '70.4%'
+        tvl: '$0',
+        vol: '$0',
+        apr: '0%'
     },
 ];
 
 const PoolsCard = ({ t }) => {
     const [allPools, setAllPools] = useState(() => {
         const savedPools = localStorage.getItem('userPools');
-        const baseData = savedPools ? JSON.parse(savedPools) : RAW_POOLS_DATA;
         
-        return baseData.map(enrichPoolData);
+        let baseData;
+        if (savedPools) {
+            baseData = JSON.parse(savedPools);
+        } else {
+            baseData = RAW_POOLS_DATA;
+        }
+        
+        return baseData.map(pool => {
+            const poolWithAddresses = {
+                ...pool,
+                token0: injectTokenData(pool.token0),
+                token1: injectTokenData(pool.token1)
+            };
+            return enrichPoolData(poolWithAddresses);
+        });
     });
+
+    const handlePoolDataUpdate = useCallback((poolId, realStats) => {
+        setAllPools(prevPools => {
+            return prevPools.map(pool => {
+                if (pool.id === poolId) {
+                    if (pool.tvl === realStats.tvl && pool.isHot === realStats.isHot) {
+                        return pool;
+                    }
+                    return { ...pool, ...realStats };
+                }
+                return pool;
+            });
+        });
+    }, []);
 
     const [selectedPool, setSelectedPool] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -132,11 +169,14 @@ const PoolsCard = ({ t }) => {
             setSelectedPool(exists);
             return;
         }
+
+        const enrichedToken0 = injectTokenData({ symbol: tokenA.symbol, logo: tokenA.img, ...tokenA });
+        const enrichedToken1 = injectTokenData({ symbol: tokenB.symbol, logo: tokenB.img, ...tokenB });
         
         let newPool = {
             id: Date.now(),
-            token0: { symbol: tokenA.symbol, logo: tokenA.img },
-            token1: { symbol: tokenB.symbol, logo: tokenB.img },
+            token0: enrichedToken0,
+            token1: enrichedToken1,
             version: 'V2',
             tvl: '$0',
             vol: '$0',
@@ -230,7 +270,13 @@ const PoolsCard = ({ t }) => {
                 <div className="h-full overflow-y-auto overflow-x-hidden px-8 sm:px-10 pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
                     {filteredPools && filteredPools.length > 0 ? (
                         filteredPools.map((pool) => (
-                            <PoolItem key={pool.id} pool={pool} t={safeT} onSelect={handleSelectPool} />
+                            <PoolItem
+                                key={pool.id}
+                                pool={pool}
+                                t={safeT}
+                                onSelect={handleSelectPool}
+                                onPoolDataUpdate={handlePoolDataUpdate}
+                            />
                         ))
                     ) : (
                         <div className="text-center text-gray-500 mt-20 text-xl">
@@ -245,11 +291,6 @@ const PoolsCard = ({ t }) => {
                     )}
                 </div>
             </div>
-
-            <style jsx>{`
-                .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .custom-scrollbar::-webkit-scrollbar { display: none; }
-            `}</style>
 
             <CreatePoolModal 
                 isOpen={isCreateModalOpen}
