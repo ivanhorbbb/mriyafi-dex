@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { ethers } from 'ethers';
 
@@ -12,13 +12,16 @@ import LiquidityModal from './pool/LiquidityModal';
 
 const PoolDetail = ({ pool, onBack, t }) => {
 
-    const token0 = pool?.token0 || {};
-    const token1 = pool?.token1 || {};
+    const token0 = useMemo(() => pool?.token0 || {}, [pool?.token0]);
+    const token1 = useMemo(() => pool?.token1 || {}, [pool?.token1]);
     
     const symbolA_Name = token0.symbol || '';
     const symbolB_Name = token1.symbol || '';
+
     const addressA = token0.address;
     const addressB = token1.address;
+
+    const isNativeETH = token0.symbol === 'ETH' || token1.symbol === 'ETH';
 
     const { reserves, price, loading } = usePoolData(token0, token1);
 
@@ -45,7 +48,8 @@ const PoolDetail = ({ pool, onBack, t }) => {
     const isPoolEmpty = parseFloat(resA) < 0.000001 || parseFloat(resB) < 0.000001;
 
     // --- HELPER FUNCTIONS ---
-    const formatTokenAmount = (val) => val.toLocaleString('en-US', {maximumFractionDigits: 6});
+    const formatTokenAmount = (val) => val ? val.toLocaleString('en-US', {maximumFractionDigits: 6}) : '0';
+    
     const formatTime = (ts) => {
         const date = new Date(ts * 1000);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -128,14 +132,21 @@ const PoolDetail = ({ pool, onBack, t }) => {
     }, [token0, token1]);
 
     const fetchTransactions = useCallback(async () => {
-        if (!window.ethereum || !addressA || !addressB) return;
+        const validA = token0.symbol === 'ETH' || (addressA && ethers.isAddress(addressA));
+        const validB = token1.symbol === 'ETH' || (addressB && ethers.isAddress(addressB));
+
+        if (!window.ethereum || !validA || !validB) return;
         
         setLoadingTx(true);
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const factoryAbi = ["function getPair(address, address) view returns (address)"];
             const factory = new ethers.Contract(CONTRACTS.FACTORY_ADDRESS, factoryAbi, provider);
-            const pairAddr = await factory.getPair(addressA, addressB);
+
+            const addrA = token0.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : addressA;
+            const addrB = token1.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : addressB;
+
+            const pairAddr = await factory.getPair(addrA, addrB);
 
             if (!pairAddr || pairAddr === ethers.ZeroAddress) {
                 setLoadingTx(false);
@@ -151,10 +162,17 @@ const PoolDetail = ({ pool, onBack, t }) => {
                 console.error(e);
                 token0Addr = addressA;
             }
+
+            const tAContract = new ethers.Contract(addrA, ERC20_ABI, provider);
+            const tBContract = new ethers.Contract(addrB, ERC20_ABI, provider);
+
+            const [decA, decB] = await Promise.all([
+                tAContract.decimals(),
+                tBContract.decimals()
+            ]);
             
-            const isTokenA0 = addressA.toLowerCase() === token0Addr.toLowerCase();
-            const decA = 18; 
-            const decB = 6;  
+            const isTokenA0 = addrA.toLowerCase() === token0Addr.toLowerCase();
+            
             const dec0 = isTokenA0 ? decA : decB;
             const dec1 = isTokenA0 ? decB : decA;
 
@@ -223,6 +241,7 @@ const PoolDetail = ({ pool, onBack, t }) => {
         } finally {
             setLoadingTx(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressA, addressB, symbolA_Name, symbolB_Name]); 
 
     useEffect(() => {
@@ -274,42 +293,76 @@ const PoolDetail = ({ pool, onBack, t }) => {
             const signer = await provider.getSigner();
             const router = new ethers.Contract(CONTRACTS.ROUTER_ADDRESS, ROUTER_ABI, signer);
             
-            const tokenAContract = new ethers.Contract(addressA, ERC20_ABI, signer);
-            const tokenBContract = new ethers.Contract(addressB, ERC20_ABI, signer);
-            
-            const decA = await tokenAContract.decimals();
-            const decB = await tokenBContract.decimals();
+            let decA = 18;
+            if (token0.symbol !== 'ETH') {
+                const tA = new ethers.Contract(addressA, ERC20_ABI, signer);
+                decA = await tA.decimals();
+            }
+
+            let decB = 18;
+            if (token1.symbol !== 'ETH') {
+                const tB = new ethers.Contract(addressB, ERC20_ABI, signer);
+                decB = await tB.decimals();
+            }
 
             const cleanAmountA = truncateToDecimals(amountA, Number(decA));
             const cleanAmountB = truncateToDecimals(amountB, Number(decB));
 
-            const amountAMin = ethers.parseUnits(cleanAmountA, decA);
-            const amountBMin = ethers.parseUnits(cleanAmountB, decB);
+            const amountABig = ethers.parseUnits(cleanAmountA, decA);
+            const amountBBig = ethers.parseUnits(cleanAmountB, decB);
 
-            setStatusMsg(`Checking allowance ${symbolA_Name}...`);
-            const allA = await tokenAContract.allowance(await signer.getAddress(), CONTRACTS.ROUTER_ADDRESS);
-            if (allA < amountAMin) {
-                setStatusMsg(`Approving ${symbolA_Name}...`);
-                await (await tokenAContract.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+            if (token0.symbol !== 'ETH') {
+                setStatusMsg(`Checking allowance ${symbolA_Name}...`);
+                const tA = new ethers.Contract(addressA, ERC20_ABI, signer);
+                const allA = await tA.allowance(await signer.getAddress(), CONTRACTS.ROUTER_ADDRESS);
+                if (allA < amountABig) {
+                    setStatusMsg(`Approving ${symbolA_Name}...`);
+                    await (await tA.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                }
             }
 
-            setStatusMsg(`Checking allowance ${symbolB_Name}...`);
-            const allB = await tokenBContract.allowance(await signer.getAddress(), CONTRACTS.ROUTER_ADDRESS);
-            if (allB < amountBMin) {
-                setStatusMsg(`Approving ${symbolB_Name}...`);
-                await (await tokenBContract.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+            if (token1.symbol !== 'ETH') {
+                setStatusMsg(`Checking allowance ${symbolB_Name}...`);
+                const tB = new ethers.Contract(addressB, ERC20_ABI, signer);
+                const allB = await tB.allowance(await signer.getAddress(), CONTRACTS.ROUTER_ADDRESS);
+                if (allB < amountBBig) {
+                    setStatusMsg(`Approving ${symbolB_Name}...`);
+                    await (await tB.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256)).wait();
+                }
             }
 
             setStatusMsg('Adding Liquidity...');
-            const tx = await router.addLiquidity(
-                addressA, addressB, amountAMin, amountBMin, 0, 0, 
-                await signer.getAddress(), Math.floor(Date.now()/1000)+1200, 
-                { gasLimit: 5000000 }
-            );
+            let tx;
+
+
+            if (isNativeETH) {
+                const isTokenA_ETH = token0.symbol === 'ETH';
+                const tokenAddress = isTokenA_ETH ? addressB : addressA;
+                const amountTokenDesired = isTokenA_ETH ? amountBBig : amountABig;
+                const amountETHDesired = isTokenA_ETH ? amountABig : amountBBig;
+
+                console.log("Adding Liquidity ETH...");
+                tx = await router.addLiquidityETH(
+                    tokenAddress,
+                    amountTokenDesired,
+                    0,
+                    0,
+                    await signer.getAddress(),
+                    Math.floor(Date.now()/1000)+1200,
+                    { value: amountETHDesired, gasLimit: 5000000 }
+                );
+            } else {
+                console.log("Adding Liquidity ERC20...");
+                tx = await router.addLiquidity(
+                    addressA, addressB, amountABig, amountBBig, 0, 0, 
+                    await signer.getAddress(), Math.floor(Date.now()/1000)+1200, 
+                    { gasLimit: 5000000 }
+                );
+            }
+
             await tx.wait();
             setStatusMsg('Success! 🎉');
             await fetchBalances();
-            await fetchTransactions(); 
             setTimeout(() => { setIsModalOpen(false); setIsTransacting(false); }, 2000);
         } catch (e) {
             console.error(e);
@@ -330,54 +383,64 @@ const PoolDetail = ({ pool, onBack, t }) => {
             
             const factoryAbi = ["function getPair(address, address) view returns (address)"];
             const factory = new ethers.Contract(CONTRACTS.FACTORY_ADDRESS, factoryAbi, signer);
-            const currentPairAddress = await factory.getPair(addressA, addressB);
 
-            if (!currentPairAddress || currentPairAddress === ethers.ZeroAddress) {
-                throw new Error("Pair not found");
-            }
+            const addrA = token0.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : addressA;
+            const addrB = token1.symbol === 'ETH' ? CONTRACTS.TOKENS.WETH : addressB;
+
+            const pairAddr = await factory.getPair(addrA, addrB);
+
+            if (!pairAddr || pairAddr === ethers.ZeroAddress) throw new Error("Pair not found");
             
-            const pairContract = new ethers.Contract(currentPairAddress, PAIR_ABI, signer);
-
+            const pairContract = new ethers.Contract(pairAddr, PAIR_ABI, signer);
             const inputAmountBig = ethers.parseUnits(removeAmount, 18);
             const realLpBalance = await pairContract.balanceOf(userAddress);
             
             let liquidityAmount = inputAmountBig;
-
             if (inputAmountBig > realLpBalance) {
-                const diff = inputAmountBig - realLpBalance;
-                if (diff > ethers.parseUnits("0.001", 18)) {
-                    setStatusMsg('Error: Insufficient LP Balance');
-                    setTimeout(() => setIsTransacting(false), 3000);
-                    return; 
-                } else {
-                    liquidityAmount = realLpBalance;
+                if (inputAmountBig - realLpBalance > ethers.parseUnits("0.001", 18)) {
+                    throw new Error("Insufficient LP Balance");
                 }
+                liquidityAmount = realLpBalance;
             }
 
             setStatusMsg('Checking LP Allowance...');
             const allowance = await pairContract.allowance(userAddress, CONTRACTS.ROUTER_ADDRESS);
-            
             if (allowance < liquidityAmount) {
                 setStatusMsg('Approving LP Tokens...');
-                const txApprove = await pairContract.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256);
-                await txApprove.wait();
+                await (await pairContract.approve(CONTRACTS.ROUTER_ADDRESS, ethers.MaxUint256)).wait();
             }
 
             setStatusMsg('Removing Liquidity...');
-            const tx = await router.removeLiquidity(
-                addressA,
-                addressB,
-                liquidityAmount,
-                0, 0, 
-                userAddress,
-                Math.floor(Date.now()/1000)+1200,
-                { gasLimit: 6000000 } 
-            );
+            let tx;
+
+            if (isNativeETH) {
+                const isTokenA_ETH = token0.symbol === 'ETH';
+                const tokenAddress = isTokenA_ETH ? addressB : addressA;
+
+                tx = await router.removeLiquidityETH(
+                    tokenAddress,
+                    liquidityAmount,
+                    0, // minToken
+                    0, // minETH
+                    userAddress,
+                    Math.floor(Date.now()/1000)+1200,
+                    { gasLimit: 6000000 } 
+                );
+            } else {
+                tx = await router.removeLiquidity(
+                    addressA,
+                    addressB,
+                    liquidityAmount,
+                    0, 0, 
+                    userAddress,
+                    Math.floor(Date.now()/1000)+1200,
+                    { gasLimit: 6000000 } 
+                );
+            }
+
             await tx.wait();
-            
             setStatusMsg('Success! Liquidity Removed 💸');
             await fetchBalances(); 
-            await fetchTransactions(); 
             setTimeout(() => { setIsModalOpen(false); setIsTransacting(false); }, 2000);
 
         } catch (e) {

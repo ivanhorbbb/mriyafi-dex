@@ -98,47 +98,36 @@ export const useSwap = (provider, account) => {
             const signer = await provider.getSigner();
             const cleanPath = getCleanPath(path);
             
-            const isNativeIn = path[0] === 'ETH';
-            const isNativeOut = path[1] === 'ETH';
+            const isNativeIn = path[0].symbol === 'ETH' || path[0] === 'ETH';
+            const isNativeOut = path[path.length - 1].symbol === 'ETH' || path[path.length - 1] === 'ETH';
 
-
-            if (cleanPath[0].toLowerCase() === cleanPath[1].toLowerCase()) {
-                console.log("🔄 Wrapping/Unwrapping ETH...");
-                const wethContract = new ethers.Contract(WETH_ADDRESS, WETH_ABI, signer);
-                
-                let tx;
-                if (isNativeIn) {
-                    // ETH -> WETH (Deposit)
-                    tx = await wethContract.deposit({ value: amountIn });
-                } else {
-                    // WETH -> ETH (Withdraw)
-                    tx = await wethContract.withdraw(amountIn);
-                }
-                
-                console.log("Transaction sent:", tx.hash);
-                return await tx.wait();
-            }
-
-            console.log(`💱 Swap Type: ${isNativeIn ? 'ETH -> Token' : isNativeOut ? 'Token -> ETH' : 'Token -> Token'}`);
-            console.log("📍 Path:", cleanPath);
+            console.log("🔄 LOGIC START:");
+            console.log(`Type: ${isNativeIn ? 'ETH->Token' : isNativeOut ? 'Token->ETH' : 'Token->Token'}`);
+            console.log("Path:", cleanPath);
 
             if (!isNativeIn) {
                 const tokenAddress = cleanPath[0];
                 const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
                 
                 const allowance = await tokenContract.allowance(account, ROUTER_ADDRESS);
+                console.log(`💰 Allowance: ${allowance.toString()} | Needed: ${amountIn.toString()}`);
                 
                 if (allowance < BigInt(amountIn)) {
-                    console.log("Approving tokens...");
+                    console.log("⚠️ Allowance too low. Sending Approve TX...");
                     const txApprove = await tokenContract.approve(ROUTER_ADDRESS, ethers.MaxUint256);
+                    console.log("Wait for Approve...", txApprove.hash);
                     await txApprove.wait();
-                    console.log("Approved!");
+                    console.log("✅ Approve Confirmed!");
+                } else {
+                    console.log("✅ Allowance is sufficient.");
                 }
             }
 
+            console.log("🚀 Initiating Swap...");
+
             const feeData = await provider.getFeeData();
             const gasOptions = { 
-                gasLimit: 3000000,
+                gasLimit: 5000000,
                 gasPrice: feeData.gasPrice
             };
 
@@ -148,16 +137,14 @@ export const useSwap = (provider, account) => {
             if (isNativeIn) {
                 // ETH -> Token
                 txSwap = await router.swapExactETHForTokens(
-                    amountOutMin,
+                    0,
                     cleanPath,
                     account,
                     deadline,
                     { value: amountIn, ...gasOptions }
                 );
-
             } else if (isNativeOut) {
                 // Token -> ETH
-                console.log("Calling swapExactTokensForETH...");
                 txSwap = await router.swapExactTokensForETH(
                     amountIn,
                     amountOutMin,
@@ -171,7 +158,7 @@ export const useSwap = (provider, account) => {
                 // Token -> Token
                 txSwap = await router.swapExactTokensForTokens(
                     amountIn,
-                    amountOutMin,
+                    0,
                     cleanPath,
                     account,
                     deadline,
@@ -187,7 +174,7 @@ export const useSwap = (provider, account) => {
 
         } catch (error) {
             console.error("Swap failed logic:", error);
-            if (error.reason) console.error("Revert Reason:", error.reason);
+            if (error.transaction) console.error("Tx Data:", error.transaction);
             if (error.data) console.error("Revert Data:", error.data);
             throw error;
         }

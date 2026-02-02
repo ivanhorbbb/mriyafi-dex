@@ -29,7 +29,13 @@ export const usePoolData = (tokenA, tokenB) => {
     const providerRef = useRef(null);
 
     useEffect(() => {
-        if (!tokenA?.address || !tokenB?.address || !ethers.isAddress(tokenA.address) || !ethers.isAddress(tokenB.address)) {
+
+        const isAddressValid = (token) => {
+            if (token?.symbol === 'ETH') return true; // Skip ETH
+            return token?.address && ethers.isAddress(token.address);
+        };
+
+        if (!tokenA || !tokenB || !isAddressValid(tokenA) || !isAddressValid(tokenB)) {
             setLoading(false);
             return;
         }

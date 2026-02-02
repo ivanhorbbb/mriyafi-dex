@@ -21,7 +21,15 @@ async function main() {
     };
 
     const mriyaFi = await deployToken("MriyaFiToken", "MFI");
-    const weth = await deployToken("MockWETH", "WETH");
+
+    console.log("--- Deploying Canonical WETH9 ---");
+    const WETHFactory = await ethers.getContractFactory("WETH9");
+    const wethContract = await WETHFactory.deploy();
+    await wethContract.waitForDeployment();
+    const wethAddress = await wethContract.getAddress();
+    const weth = { contract: wethContract, address: wethAddress };
+    console.log(` ✅ WETH (Canonical) deployed to: ${weth.address}`);
+    
     const usdc = await deployToken("MockUSDC", "USDC");
     const usdt = await deployToken("MockUSDT", "USDT");
     const wbtc = await deployToken("MockWBTC", "WBTC");
