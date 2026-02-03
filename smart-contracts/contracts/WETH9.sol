@@ -26,8 +26,8 @@ contract WETH9 {
     function withdraw(uint wad) public {
         require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
-        payable(msg.sender).transfer(wad);
-        emit Withdraw(msg.sender, wad);
+        (bool success, ) = msg.sender.call{value: wad}("");
+        require(success, "ETH transfer failed");
     }
 
     function totalSupply() public view returns (uint) {

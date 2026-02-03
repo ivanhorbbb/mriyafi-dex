@@ -54,7 +54,8 @@ contract MockWETH is ERC20 {
     function withdraw(uint256 amount) public {
         require(balanceOf(msg.sender) >= amount, "Insufficient WETH balance");
         _burn(msg.sender, amount);
-        payable(msg.sender).transfer(amount);
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "ETH transfer failed");
         emit Withdrawal(msg.sender, amount);
     }
 
