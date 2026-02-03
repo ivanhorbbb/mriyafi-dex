@@ -4,6 +4,7 @@ import Header from './components/Header';
 import SwapCard from './components/SwapCard';
 import PoolsCard from './components/PoolsCard';
 import { translations } from './translations';
+import { Toaster } from 'react-hot-toast';
 
 import { useTokenBalances } from './hooks/useTokenBalances';
 
@@ -158,6 +159,24 @@ function App() {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
+      
+      {/* TOASTER */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#131823',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#00d4ff',
+              secondary: '#131823',
+            },
+          },
+        }}
+      />
       
       {/* EFFECTS */}
       <BackgroundEffects />

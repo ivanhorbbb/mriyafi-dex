@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { createPortal } from 'react-dom';
 import { ethers } from 'ethers';
-import { AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 import { TOKENS } from '../constants/tokens';
 import { useSwap } from '../hooks/useSwap';
 import { useDebounce } from '../hooks/useDebounce';
 
-import Notification from './ui/Notification';
 import ChartSection from './swap/ChartSection';
 import SwapForm from './swap/SwapForm';
 const SettingsModal = React.lazy(() => import('./swap/SettingsModal'));
@@ -42,8 +40,6 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
     const [marketRate, setMarketRate] = useState('0.00');
     const [priceChange, setPriceChange] = useState(0);
-
-    const [notification, setNotification] = useState(null);
 
     const { getAmountsIn, getAmountsOut, swapTokens } = useSwap(provider, account);
 
@@ -194,10 +190,6 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         setReceiveAmount('');
     }, [paySymbol, receiveSymbol]);
 
-    const showNotification = (type, title, message) => {
-        setNotification({ type, title, message });
-    };
-
     const handleSwap = async () => {
         if (!account) {
             connectWallet();
@@ -206,32 +198,56 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         if (!payAmount) return;
 
         setIsSwapping(true);
-        try {
+
+        const swapPromise = async () => {
             const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
             if (!receiveAmount) throw new Error("Price not updated yet");
             const amountOutWei = ethers.parseUnits(receiveAmount, receiveToken.decimals);
             
             const slippageFactor = 10000n - BigInt(Math.floor(slippage * 100));
             const amountOutMin = (amountOutWei * slippageFactor) / 10000n;
+
             const deadlineInSeconds = Math.floor(Date.now() / 1000) + (deadline * 60);
             const path = [payToken.address, receiveToken.address];
 
-            await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
+            const tx = await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
+            return tx;
+        };
 
-            const successTitle = t.notifications?.successTitle || 'Success';
-            const successMsg = `${t.notifications?.swapped || 'Swapped'} ${payAmount} ${payToken.symbol} to ${receiveAmount} ${receiveToken.symbol}`;
-            showNotification('success', successTitle, successMsg);
-
-            setPayAmount('');
-            setReceiveAmount('')
-        } catch (error) {
-            console.error(error);
-            const errorTitle = t.notifications?.errorTitle || 'Error';
-            const errorMsg = t.notifications?.errorMsg || 'Swap failed! Check settings.';
-            showNotification('error', errorTitle, errorMsg);
-        } finally {
+        await toast.promise(
+            swapPromise(),
+            {
+                loading: `Swapping ${payAmount} ${payToken.symbol}...`,
+                success: () => (
+                    <div className="flex flex-col">
+                        <span className="font-bold">Swap Successful! 🚀</span>
+                        <span className="text-sm opacity-80">
+                            Swapped {payAmount} {payToken.symbol} for {receiveAmount} {receiveToken.symbol}
+                        </span>
+                    </div>
+                ),
+                error: (err) => {
+                    console.error(err);
+                    let msg = "Transaction Failed";
+                    if (err.reason) msg = err.reason;
+                    if (err.message?.includes("user rejected")) msg = "User rejected request";
+                    
+                    return (
+                        <div className="flex flex-col">
+                            <span className="font-bold">Error ❌</span>
+                            <span className="text-sm opacity-80">{msg}</span>
+                        </div>
+                    );
+                },
+            },
+            {
+                style: { minWidth: '250px' },
+            }
+        ).finally(() => {
             setIsSwapping(false);
-        }
+            setPayAmount('');
+            setReceiveAmount('');
+        });
     };
 
     const openTokenModal = (type) => {
@@ -264,21 +280,6 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
 
     return(
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
-
-            {createPortal(
-                <AnimatePresence>
-                    {notification && (
-                        <Notification 
-                            key="notification"
-                            type={notification.type}
-                            title={notification.title}
-                            message={notification.message} 
-                            onClose={() => setNotification(null)} 
-                        />
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
             
             <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 
