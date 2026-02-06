@@ -249,13 +249,10 @@ const PoolsCard = ({ t }) => {
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
             {/* Main Wrapper */}
             <div className="
-                relative w-full max-w-5xl 
-                min-h-[600px] h-auto
+                relative w-full max-w-5xl h-[800px] 
                 rounded-[3rem] 
                 shadow-2xl 
                 bg-[#131823]/95 backdrop-blur-md 
-                border border-white/10
-                flex flex-col
                 overflow-hidden isolate
             ">
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
@@ -271,24 +268,22 @@ const PoolsCard = ({ t }) => {
                 />
 
                 {/* List Section */}
-                <div className="relative z-10 w-full flex-grow p-4 md:p-8 space-y-6 md:space-y-8">
+                <div className="h-full overflow-y-auto overflow-x-hidden px-8 sm:px-10 pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
                     {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredPools.map((pool) => (
-                                <PoolItem
-                                    key={pool.id}
-                                    pool={pool}
-                                    t={safeT}
-                                    onSelect={handleSelectPool}
-                                    onPoolDataUpdate={handlePoolDataUpdate}
-                                />
-                            ))}
-                        </div>
+                        filteredPools.map((pool) => (
+                            <PoolItem
+                                key={pool.id}
+                                pool={pool}
+                                t={safeT}
+                                onSelect={handleSelectPool}
+                                onPoolDataUpdate={handlePoolDataUpdate}
+                            />
+                        ))
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500 text-xl">
-                            <p>{safeT.noPoolsFound}</p>
+                        <div className="text-center text-gray-500 mt-20 text-xl">
+                            {safeT.noPoolsFound} <br/>
                             <span 
-                                className="text-[#00d4ff] cursor-pointer hover:underline mt-2 inline-block"
+                                className="text-[#00d4ff] cursor-pointer hover:underline"
                                 onClick={() => setIsCreateModalOpen(true)}
                             >
                                 {safeT.tryAdjustingFilters}
