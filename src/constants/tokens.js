@@ -14,7 +14,8 @@ export const TOKENS = [
         address: contractAddresses.MriyaFi,
         decimals: 18,
         img: mfi,
-        price: 0.02
+        price: 0.05,
+        coingeckoId: null
     },
     { 
         name: 'Ethereum',
@@ -22,7 +23,8 @@ export const TOKENS = [
         address: "ETH",
         decimals: 18,
         img: eth,
-        price: 2000.00
+        price: 2500.00,
+        coingeckoId: 'ethereum'
     },
     { 
         name: 'USD Coin',
@@ -30,7 +32,8 @@ export const TOKENS = [
         address: contractAddresses.USDC,
         decimals: 6,
         img: usdc,
-        price: 1.0
+        price: 1.0,
+        coingeckoId: 'usd-coin'
     },
     { 
         name: 'Tether',
@@ -38,7 +41,8 @@ export const TOKENS = [
         address: contractAddresses.USDT,
         decimals: 6,
         img: usdt,
-        price: 1.0
+        price: 1.0,
+        coingeckoId: 'tether'
     },
     { 
         name: 'Wrapped Bitcoin',
@@ -46,7 +50,8 @@ export const TOKENS = [
         address: contractAddresses.WBTC,
         decimals: 8,
         img: wbtc,
-        price: 30000.00
+        price: 60000.00,
+        coingeckoId: 'wrapped-bitcoin'
     },
     { 
         name: 'Wrapped Ethereum',
@@ -54,6 +59,7 @@ export const TOKENS = [
         address: contractAddresses.WETH,
         decimals: 18,
         img: weth,
-        price: 2000.00
+        price: 2500.00,
+        coingeckoId: 'ethereum'
     }
 ];

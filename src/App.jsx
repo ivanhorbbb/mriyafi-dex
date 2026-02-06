@@ -44,25 +44,52 @@ const Earn = React.memo(({ t }) => (
 ));
 
 function App() {
+  const SEPOLIA_CHAIN_ID = '0xaa36a7';
   const [account, setAccount] = useState(null);
   const [provider, setProvider] = useState(null);
   const [activeTab, setActiveTab] = useState('swap');
   const [lang, setLang] = useState('en');
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const { balances } = useTokenBalances(provider, account, refreshTrigger);
-
-  const updateBalances = useCallback(() => {
-      setRefreshTrigger(prev => prev + 1);
-  }, []);
+  const { balances, refetch } = useTokenBalances(provider, account);
 
   const connectWallet = useCallback(async () => {
     if (window.ethereum) { 
       try {
         const newProvider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await newProvider.send("eth_requestAccounts", []);
+
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+        if (chainId !== SEPOLIA_CHAIN_ID) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: SEPOLIA_CHAIN_ID }],
+            });
+          } catch (switchError) {
+            if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [
+                            {
+                                chainId: SEPOLIA_CHAIN_ID,
+                                chainName: 'Sepolia Test Network',
+                                nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 },
+                                rpcUrls: ['https://sepolia.drpc.org'],
+                                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                            },
+                        ],
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
         setAccount(accounts[0]);
         setProvider(newProvider);
+        localStorage.setItem('isWalletConnected', 'true');
+
       } catch (error) {
         console.error("User rejected request:", error);
       }
@@ -70,19 +97,12 @@ function App() {
       alert("Please install MetaMask to use this app!");
     }
   }, []);
-
-  const disconnectWallet = async () => {
+  
+  const disconnectWallet = useCallback(() => {
     setAccount(null);
-    
-    try {
-      await window.ethereum.request({
-        method: "wallet_revokePermissions",
-        params: [{ eth_accounts: {} }]
-      });
-    } catch (error) {
-      console.error("Failed to revoke permissions (user rejected or not supported)", error);
-    }
-  };
+    setProvider(null);
+    localStorage.removeItem('isWalletConnected');
+  }, []);
 
   
   const toggleLang = useCallback(() => {
@@ -93,15 +113,20 @@ function App() {
     if (!window.ethereum) return;
 
     const init = async () => {
-        try {
-            const accounts = await window.ethereum.request({ method: "eth_accounts" });
-            if (accounts.length > 0) {
-                setAccount(accounts[0]);
-                setProvider(new ethers.BrowserProvider(window.ethereum));
-            }
-        } catch (e) {
-            console.error(e);
-        }
+
+      const shouldConnect = localStorage.getItem('isWalletConnected') === 'true';
+
+      if (!shouldConnect) return;
+
+      try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts.length > 0) {
+              setAccount(accounts[0]);
+              setProvider(new ethers.BrowserProvider(window.ethereum));
+          }
+      } catch (e) {
+          console.error(e);
+      }
     };
 
     init();
@@ -139,6 +164,7 @@ function App() {
         connectWallet={connectWallet}
         disconnectWallet={disconnectWallet}
       />
+        // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [activeTab, lang, t.nav, account, connectWallet, toggleLang]);
 
   const memoizedFooter = useMemo(() => (
@@ -150,12 +176,12 @@ function App() {
   
   const content = useMemo(() => {
     switch(activeTab) {
-      case 'swap': return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} updateBalances={updateBalances} />;
+      case 'swap': return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} refetchBalances={refetch} />;
       case 'pools': return <PoolsCard t={t.pools} />;
       case 'earn': return <Earn t={t} />;
-      default: return <SwapCard t={t.swap} account={account} balances={balances}/>;
+      default: return <SwapCard t={t.swap} account={account} balances={balances} provider={provider} connectWallet={connectWallet} refetchBalances={refetch} />;
     }
-  }, [activeTab, t, account, balances, provider, connectWallet, updateBalances]);
+  }, [activeTab, t, account, balances, provider, connectWallet, refetch]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">

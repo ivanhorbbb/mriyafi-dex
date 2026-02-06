@@ -5,18 +5,25 @@ import toast from 'react-hot-toast';
 import { TOKENS } from '../constants/tokens';
 import { useSwap } from '../hooks/useSwap';
 import { useDebounce } from '../hooks/useDebounce';
+import { useTokenPrices } from '../hooks/useTokenPrices';
 
 import ChartSection from './swap/ChartSection';
 import SwapForm from './swap/SwapForm';
 const SettingsModal = React.lazy(() => import('./swap/SettingsModal'));
 const TokenSelectModal = React.lazy(() => import('./swap/TokenSelectModal'));
 
-const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
+const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalances }) => {
 
     // STATES
     const [tokens] = useState(TOKENS);
     const [paySymbol, setPaySymbol] = useState('MFI');
     const [receiveSymbol, setReceiveSymbol] = useState('USDC');
+
+    const prices = useTokenPrices(provider);
+
+    const getTokenPrice = useCallback((symbol) => {
+        return prices[symbol] || 0;
+    }, [prices]);
 
     const payToken = tokens.find(t => t.symbol === paySymbol) || tokens[0];
     const receiveToken = tokens.find(t => t.symbol === receiveSymbol) || tokens[1];
@@ -91,7 +98,9 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
                 const estimatedGasLimit = 200000n;
                 const totalCostWei = gasPrice * estimatedGasLimit;
                 const totalCostEth = parseFloat(ethers.formatEther(totalCostWei));
-                const ethPrice = tokens.find(t => t.symbol === 'ETH')?.price || 2000;
+                
+                const ethPrice = getTokenPrice('ETH') || 2500;
+                
                 const costUsd = (totalCostEth * ethPrice).toFixed(2);
                 setGasPriceUsd(costUsd);
             } catch (e) {
@@ -102,7 +111,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
         fetchGas();
         const interval = setInterval(fetchGas, 10000);
         return () => clearInterval(interval);
-    }, [provider, tokens]);
+    }, [provider, getTokenPrice]);
 
     // QUOTE EFFECTS
     useEffect(() => {
@@ -211,6 +220,8 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
             const path = [payToken.address, receiveToken.address];
 
             const tx = await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
+            await tx.wait();
+            
             return tx;
         };
 
@@ -218,14 +229,18 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
             swapPromise(),
             {
                 loading: `Swapping ${payAmount} ${payToken.symbol}...`,
-                success: () => (
-                    <div className="flex flex-col">
-                        <span className="font-bold">Swap Successful! 🚀</span>
-                        <span className="text-sm opacity-80">
-                            Swapped {payAmount} {payToken.symbol} for {receiveAmount} {receiveToken.symbol}
-                        </span>
-                    </div>
-                ),
+                success: () => {
+                    if (refetchBalances) refetchBalances();
+
+                    return (
+                        <div className="flex flex-col">
+                            <span className="font-bold">Swap Successful! 🚀</span>
+                            <span className="text-sm opacity-80">
+                                Swapped {payAmount} {payToken.symbol} for {receiveAmount} {receiveToken.symbol}
+                            </span>
+                        </div>
+                    );
+                },
                 error: (err) => {
                     console.error(err);
                     let msg = "Transaction Failed";
@@ -247,6 +262,9 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
             setIsSwapping(false);
             setPayAmount('');
             setReceiveAmount('');
+            setTimeout(() => {
+                if (refetchBalances) refetchBalances();
+            }, 2000);
         });
     };
 
@@ -272,8 +290,8 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
     const isInsufficientBalance = parseFloat(payAmount) > currentBalance;
     const isEnterAmount = !payAmount || parseFloat(payAmount) <= 0;
 
-    const payUsdValue = ((parseFloat(payAmount) || 0) * payToken.price).toFixed(2);
-    const receiveUsdValue = ((parseFloat(receiveAmount) || 0) * receiveToken.price).toFixed(2);
+    const payUsdValue = ((parseFloat(payAmount) || 0) * getTokenPrice(payToken.symbol)).toFixed(2);
+    const receiveUsdValue = ((parseFloat(receiveAmount) || 0) * getTokenPrice(receiveToken.symbol)).toFixed(2);
     const displayRate = parseFloat(receiveAmount) > 0 && parseFloat(payAmount) > 0
         ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6) 
         : marketRate;
@@ -330,6 +348,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet }) => {
                         onSelect={selectToken}
                         activeSymbol={tokenModalType === 'pay' ? paySymbol : receiveSymbol}
                         getTokenBalance={getTokenBalance}
+                        getTokenPrice={getTokenPrice}
                     />
                 )}
             </Suspense>

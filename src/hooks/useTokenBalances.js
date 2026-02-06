@@ -3,9 +3,11 @@ import { ethers } from 'ethers';
 import { TOKENS } from '../constants/tokens';
 import contractAbi from '../constants/contract-abi.json';
 
-export const useTokenBalances = (provider, account, refreshTrigger = 0) => {
+export const useTokenBalances = (provider, account) => {
     const [balances, setBalances] = useState({});
     const [loading, setLoading] = useState(true);
+
+    const [trigger, setTrigger] = useState(0);
 
     const isFetching = useRef(false);
 
@@ -61,6 +63,10 @@ export const useTokenBalances = (provider, account, refreshTrigger = 0) => {
         }
     }, [provider, account]);
 
+    const refresh = useCallback(() => {
+        setTrigger(prev => prev + 1);
+    }, []);
+
     useEffect(() => {
         if (provider && account) {
             fetchBalances();
@@ -70,7 +76,7 @@ export const useTokenBalances = (provider, account, refreshTrigger = 0) => {
         } else {
             setLoading(false);
         }
-    }, [provider, account, fetchBalances, refreshTrigger]);
+    }, [provider, account, fetchBalances, trigger]);
 
-    return { balances, loading };
+    return { balances, loading, refresh };
 };

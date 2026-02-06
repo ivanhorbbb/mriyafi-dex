@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search } from 'lucide-react';
 
-const TokenSelectModal = ({ isOpen, onClose, t, tokens, onSelect, activeSymbol, getTokenBalance }) => {
+const TokenSelectModal = ({ isOpen, onClose, t, tokens, onSelect, activeSymbol, getTokenBalance, getTokenPrice }) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     if (!isOpen) return null;
@@ -44,33 +44,38 @@ const TokenSelectModal = ({ isOpen, onClose, t, tokens, onSelect, activeSymbol, 
                 {/* TOKENS LIST*/}
                 <div className="flex-1 overflow-y-auto space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                     {filteredTokens.length > 0 ? (
-                        filteredTokens.map((token) => (
-                            <div
-                                key={token.symbol}
-                                onClick={() => onSelect(token)}
-                                className={`
-                                    flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
-                                    ${activeSymbol === token.symbol
-                                        ? 'bg-[#00d4ff]/10 border border-[#00d4ff]/30'
-                                        : 'hover:bg-white/5 border border-transparent'
-                                    }    
-                                `}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <img src={token.img} alt={token.symbol} className="w-9 h-9 rounded-full" />
-                                    <div className="flex flex-col">
-                                        <span className="text-white font-bold">{token.symbol}</span>
-                                        <span className="text-gray-500 text-xs">{token.name}</span>
+                        filteredTokens.map((token) => {
+                            const price = getTokenPrice ? getTokenPrice(token.symbol) : token.price;
+                            const displayPrice = price ? parseFloat(price).toFixed(2) : '0.00';
+
+                            return (
+                                <div
+                                    key={token.symbol}
+                                    onClick={() => onSelect(token)}
+                                    className={`
+                                        flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
+                                        ${activeSymbol === token.symbol
+                                            ? 'bg-[#00d4ff]/10 border border-[#00d4ff]/30'
+                                            : 'hover:bg-white/5 border border-transparent'
+                                        }    
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={token.img} alt={token.symbol} className="w-9 h-9 rounded-full" />
+                                        <div className="flex flex-col">
+                                            <span className="text-white font-bold">{token.symbol}</span>
+                                            <span className="text-gray-500 text-xs">{token.name}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-white font-mono text-sm">
+                                            {getTokenBalance(token.symbol)}
+                                        </div>
+                                        <div className="text-gray-500 text-xs">${displayPrice}</div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-white font-mono text-sm">
-                                        {getTokenBalance(token.symbol)}
-                                    </div>
-                                    <div className="text-gray-500 text-xs">${token.price}</div>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="text-center text-gray-500 py-4">
                             No tokens found
