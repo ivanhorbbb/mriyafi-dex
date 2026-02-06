@@ -53,6 +53,15 @@ function App() {
   const { balances, refetch } = useTokenBalances(provider, account);
 
   const connectWallet = useCallback(async () => {
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile && !window.ethereum) {
+        const currentUrl = window.location.host;
+        window.location.href = `https://metamask.app.link/dapp/${currentUrl}`;
+        return;
+    }
+
     if (window.ethereum) { 
       try {
         const newProvider = new ethers.BrowserProvider(window.ethereum);
@@ -95,6 +104,7 @@ function App() {
       }
     } else {
       alert("Please install MetaMask to use this app!");
+      window.open("https://metamask.io/download/", "_blank");
     }
   }, []);
   
@@ -210,7 +220,7 @@ function App() {
       <div className="relative z-10 flex flex-col min-h-screen">
         {memoizedHeader}
         
-        <main className="flex-grow flex flex-col items-center justify-center p-6 mt-16 md:scale-110 transition-transform duration-500 origin-center will-change-transform">
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 mt-16 md:p-6 md:scale-110 transition-transform duration-500 origin-center will-change-transform">
            {content}
         </main>
 

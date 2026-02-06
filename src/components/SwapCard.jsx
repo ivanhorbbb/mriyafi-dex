@@ -297,45 +297,49 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
         : marketRate;
 
     return(
-        <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
+        <div className="w-full flex justify-center p-0 md:p-4 animate-fade-in relative z-10">
             
-            <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
                 
-                <ChartSection 
-                    timeframe={timeframe} 
-                    setTimeframe={setTimeframe} 
-                    payToken={payToken} 
-                    receiveToken={receiveToken} 
-                    displayRate={displayRate} 
-                    themeStyles={themeStyles} 
-                    marketRate={marketRate}
-                    onStatsUpdate={setPriceChange}
-                    priceChange={priceChange}
-                />
+                <div className="lg:col-span-2 w-full order-2 lg:order-1">
+                    <ChartSection 
+                        timeframe={timeframe} 
+                        setTimeframe={setTimeframe} 
+                        payToken={payToken} 
+                        receiveToken={receiveToken} 
+                        displayRate={displayRate} 
+                        themeStyles={themeStyles} 
+                        marketRate={marketRate}
+                        onStatsUpdate={setPriceChange}
+                        priceChange={priceChange}
+                    />
+                </div>
 
-                <SwapForm 
-                    t={t}
-                    themeStyles={themeStyles}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    payAmount={payAmount}
-                    onPayInput={handlePayInput}
-                    getTokenBalance={getTokenBalance}
-                    payToken={payToken}
-                    onOpenTokenModal={openTokenModal}
-                    handleMaxClick={handleMaxClick}
-                    payUsdValue={payUsdValue}
-                    handleSwapArrows={handleSwapArrows}
-                    receiveAmount={receiveAmount}
-                    onReceiveInput={handleReceiveInput}
-                    receiveToken={receiveToken}
-                    receiveUsdValue={receiveUsdValue}
-                    displayRate={displayRate}
-                    gasPriceUsd={gasPriceUsd}
-                    isSwapping={isSwapping}
-                    isInsufficientBalance={isInsufficientBalance}
-                    isEnterAmount={isEnterAmount}
-                    handleSwap={handleSwap}
-                />
+                <div className="w-full order-1 lg:order-2">
+                    <SwapForm 
+                        t={t}
+                        themeStyles={themeStyles}
+                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        payAmount={payAmount}
+                        onPayInput={handlePayInput}
+                        getTokenBalance={getTokenBalance}
+                        payToken={payToken}
+                        onOpenTokenModal={openTokenModal}
+                        handleMaxClick={handleMaxClick}
+                        payUsdValue={payUsdValue}
+                        handleSwapArrows={handleSwapArrows}
+                        receiveAmount={receiveAmount}
+                        onReceiveInput={handleReceiveInput}
+                        receiveToken={receiveToken}
+                        receiveUsdValue={receiveUsdValue}
+                        displayRate={displayRate}
+                        gasPriceUsd={gasPriceUsd}
+                        isSwapping={isSwapping}
+                        isInsufficientBalance={isInsufficientBalance}
+                        isEnterAmount={isEnterAmount}
+                        handleSwap={handleSwap}
+                    />
+                </div>
             </div>
 
             <Suspense fallback={null}>
