@@ -9,6 +9,7 @@ const PoolItem = ({ pool, t, onSelect, onPoolDataUpdate }) => {
     const displayTVL = loading ? '...' : tvl;
     const displayVOL = loading ? '...' : vol;
     const displayAPR = loading ? '...' : apr;
+    
     const isHot = loading ? false : isRealHot;
 
     const handleClick = useCallback(() => {
