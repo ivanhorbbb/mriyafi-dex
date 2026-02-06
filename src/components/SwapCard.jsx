@@ -301,8 +301,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
             
             <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
                 
-                <div className="lg:col-span-2 w-full order-2 lg:order-1">
-                    <ChartSection 
+                <ChartSection 
                         timeframe={timeframe} 
                         setTimeframe={setTimeframe} 
                         payToken={payToken} 
@@ -312,8 +311,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
                         marketRate={marketRate}
                         onStatsUpdate={setPriceChange}
                         priceChange={priceChange}
-                    />
-                </div>
+                />
 
                 <div className="w-full order-1 lg:order-2">
                     <SwapForm 
