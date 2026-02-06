@@ -261,7 +261,7 @@ const PoolsCard = ({ t }) => {
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
                 
                 {/* Header Component */}
-                <div className="flex-shrink-0 z-20">
+                <div className="flex-shrink-0 z-30 bg-[#131823] relative">
                     <PoolsHeader 
                         t={safeT} 
                         searchQuery={searchQuery}
@@ -270,6 +270,7 @@ const PoolsCard = ({ t }) => {
                         setIsHotFilter={setIsHotFilter}
                         onCreatePool={() => setIsCreateModalOpen(true)}
                     />
+                    <div className="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-b from-[#131823] to-transparent pointer-events-none translate-y-full z-20"></div>
                 </div>
 
                 {/* List Section */}
