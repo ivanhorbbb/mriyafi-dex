@@ -36,7 +36,7 @@ const TransactionsTable = ({ transactions, loading, symbols, t, formatTokenAmoun
                             transactions.map((tx) => (
                                 <tr key={tx.hash} className="group hover:bg-white/5 transition-colors">
                                     <td className="py-4 pl-2">
-                                        <a href={`https://etherscan.io/tx/${tx.hash}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#00d4ff] hover:text-white font-medium">
+                                        <a href={`https://sepolia.etherscan.io/tx/${tx.hash}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#00d4ff] hover:text-white font-medium">
                                             {tx.type} <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </a>
                                     </td>
