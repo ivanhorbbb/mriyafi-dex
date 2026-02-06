@@ -208,8 +208,8 @@ function App() {
   }, [activeTab, t, account, balances, provider, connectWallet, refetch]);
 
   return (
-    <div className="min-h-[100dvh] w-full relative overflow-x-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
-      
+    <div className="relative w-full min-h-[100dvh] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
+        
       {/* TOASTER */}
       <Toaster 
         position="top-right"
