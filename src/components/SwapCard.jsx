@@ -297,9 +297,9 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
         : marketRate;
 
     return(
-        <div className="w-full flex justify-center p-0 md:p-4 animate-fade-in relative z-10">
+        <div className="w-full flex justify-center p-0 md:p-4 relative z-10">
             
-            <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
+            <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-stretch">
                 
                 <div className="lg:col-span-2 w-full order-2 lg:order-1">
                     <ChartSection 

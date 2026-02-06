@@ -9,7 +9,7 @@ const ChartSection = memo(({ timeframe, setTimeframe, payToken, receiveToken, di
     const percentColor = isPositive ? '#22c55e' : '#ef4444';
     
     return (
-        <div className="lg:col-span-2 flex flex-col">
+        <div className="flex flex-col w-full h-full">
             <div className="
             relative w-full h-full min-h-[550px] 
             rounded-[3rem] border border-white/10 
@@ -71,7 +71,7 @@ const ChartSection = memo(({ timeframe, setTimeframe, payToken, receiveToken, di
                 </div>
 
                 {/* Chart */}
-                <div className="w-full h-[250px] md:h-[450px] relative mt-2">
+                <div className="w-full relative flex-grow min-h-[250px] mt-2">
                     <AnimatedChart 
                         timeframe={timeframe} 
                         color={themeStyles.isGold ? '#f0dfae' : '#00d4ff'} 
