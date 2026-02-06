@@ -10,7 +10,7 @@ import { useTokenBalances } from './hooks/useTokenBalances';
 
 const BackgroundEffects = React.memo(() => {
   return (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050b14]">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-1] bg-[#050b14]">
             <div 
                 className="absolute top-[-20%] right-[-10%] w-[80vw] h-[80vw] opacity-30 animate-pulse-slow"
                 style={{
@@ -208,7 +208,7 @@ function App() {
   }, [activeTab, t, account, balances, provider, connectWallet, refetch]);
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
+    <div className="min-h-[100dvh] w-full relative overflow-x-hidden bg-[#050b14] text-white font-sans selection:bg-[#00d4ff]/30 selection:text-white">
       
       {/* TOASTER */}
       <Toaster 
@@ -231,10 +231,10 @@ function App() {
       {/* EFFECTS */}
       <BackgroundEffects />
 
-      <div className="relative z-20 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col min-h-[100dvh]">
         {memoizedHeader}
         
-        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 mt-16 md:p-6 md:scale-110 transition-transform duration-500 origin-center will-change-transform">
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 mt-16 md:p-6">
            {content}
         </main>
 
