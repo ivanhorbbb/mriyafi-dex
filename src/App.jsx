@@ -136,7 +136,9 @@ function App() {
       if (shouldAutoConnect || storedConnection) {
           try {
               if (shouldAutoConnect) {
-                  await connectWallet();
+                  setTimeout(async () => {
+                      await connectWallet();
+                  }, 1000)
               } else {
                   const accounts = await window.ethereum.request({ method: "eth_accounts" });
                   if (accounts.length > 0) {
@@ -229,7 +231,7 @@ function App() {
       {/* EFFECTS */}
       <BackgroundEffects />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-20 flex flex-col min-h-screen">
         {memoizedHeader}
         
         <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 mt-16 md:p-6 md:scale-110 transition-transform duration-500 origin-center will-change-transform">

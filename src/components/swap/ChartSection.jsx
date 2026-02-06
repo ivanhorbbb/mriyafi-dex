@@ -71,7 +71,7 @@ const ChartSection = memo(({ timeframe, setTimeframe, payToken, receiveToken, di
                 </div>
 
                 {/* Chart */}
-                <div className="flex-grow relative w-full mt-auto">
+                <div className="w-full h-[250px] md:h-[450px] relative mt-2">
                     <AnimatedChart 
                         timeframe={timeframe} 
                         color={themeStyles.isGold ? '#f0dfae' : '#00d4ff'} 
