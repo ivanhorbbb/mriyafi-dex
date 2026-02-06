@@ -261,7 +261,7 @@ const PoolsCard = ({ t }) => {
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
                 
                 {/* Header Component */}
-                <div className="flex-shrink-0 z-30 bg-[#131823] relative">
+                <div className="flex-shrink-0 z-30 bg-[#131823] relative rounded-t-[3rem]">
                     <PoolsHeader 
                         t={safeT} 
                         searchQuery={searchQuery}
@@ -274,9 +274,9 @@ const PoolsCard = ({ t }) => {
                 </div>
 
                 {/* List Section */}
-                <div className="flex-1 w-full px-4 md:px-10 pb-10 overflow-visible md:overflow-y-auto custom-scrollbar">
+                <div className="flex-1 w-full px-4 md:px-10 pb-10 overflow-visible md:overflow-y-auto custom-scrollbar relative z-10 pt-4">
                     {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4 pt-2">
+                        <div className="grid grid-cols-1 gap-4">
                             {filteredPools.map((pool) => (
                                 <PoolItem
                                     key={pool.id}
