@@ -249,9 +249,9 @@ const PoolsCard = ({ t }) => {
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10 pb-20">
             {/* Main Wrapper */}
             <div className="
-                relative w-full max-w-5xl 
-                min-h-[600px] h-auto
-                rounded-[3rem] 
+                relative w-full max-w-6xl 
+                h-[calc(100vh-120px)] min-h-[500px]
+                rounded-[2.5rem] 
                 shadow-2xl 
                 bg-[#131823]/95 backdrop-blur-md 
                 border border-white/10
@@ -261,19 +261,21 @@ const PoolsCard = ({ t }) => {
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
                 
                 {/* Header Component */}
-                <PoolsHeader 
-                    t={safeT} 
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    isHotFilter={isHotFilter}
-                    setIsHotFilter={setIsHotFilter}
-                    onCreatePool={() => setIsCreateModalOpen(true)}
-                />
+                <div className="flex-shrink-0 z-20 bg-gradient-to-b from-[#131823] to-[#131823]/90">
+                    <PoolsHeader 
+                        t={safeT} 
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        isHotFilter={isHotFilter}
+                        setIsHotFilter={setIsHotFilter}
+                        onCreatePool={() => setIsCreateModalOpen(true)}
+                    />
+                </div>
 
                 {/* List Section */}
-                <div className="flex-1 w-full px-6 md:px-10 pb-10 mt-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-8 pt-4">
                     {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {filteredPools.map((pool) => (
                                 <PoolItem
                                     key={pool.id}
@@ -285,10 +287,10 @@ const PoolsCard = ({ t }) => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center text-gray-500 mt-20 text-xl">
-                            {safeT.noPoolsFound || "No pools found."} <br/>
+                        <div className="flex flex-col items-center justify-center h-full text-gray-500 text-xl">
+                            <p>{safeT.noPoolsFound || "No pools found."}</p>
                             <span 
-                                className="text-[#00d4ff] cursor-pointer hover:underline"
+                                className="text-[#00d4ff] cursor-pointer hover:underline mt-2"
                                 onClick={() => setIsCreateModalOpen(true)}
                             >
                                 {safeT.tryAdjustingFilters || "Create new one?"}
