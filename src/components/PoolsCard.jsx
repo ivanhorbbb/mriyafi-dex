@@ -274,10 +274,10 @@ const PoolsCard = ({ t }) => {
                 </div>
 
                 {/* List Section */}
-                <div className="flex-1 w-full px-4 md:px-10 pb-10 overflow-visible md:overflow-y-auto custom-scrollbar relative z-10 pt-4">
+                <div className="h-full overflow-y-auto overflow-x-hidden px-4 md:px-10 pt-[360px] md:pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
                     {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4">
-                            {filteredPools.map((pool) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                             {filteredPools.map((pool) => (
                                 <PoolItem
                                     key={pool.id}
                                     pool={pool}
@@ -288,10 +288,10 @@ const PoolsCard = ({ t }) => {
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-40 md:h-full text-gray-500 text-xl text-center">
-                            <p>{safeT.noPoolsFound || "No pools found."}</p>
+                        <div className="text-center text-gray-500 mt-20 text-xl">
+                            {safeT.noPoolsFound || "No pools found."} <br/>
                             <span 
-                                className="text-[#00d4ff] cursor-pointer hover:underline mt-2"
+                                className="text-[#00d4ff] cursor-pointer hover:underline"
                                 onClick={() => setIsCreateModalOpen(true)}
                             >
                                 {safeT.tryAdjustingFilters || "Create new one?"}
