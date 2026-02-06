@@ -57,8 +57,8 @@ function App() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile && !window.ethereum) {
-        const currentUrl = window.location.host;
-        window.location.href = `https://metamask.app.link/dapp/${currentUrl}`;
+        const currentUrl = window.location.host + window.location.pathname;
+        window.location.href = `https://metamask.app.link/dapp/${currentUrl}?connect=true`;
         return;
     }
 
@@ -99,6 +99,12 @@ function App() {
         setProvider(newProvider);
         localStorage.setItem('isWalletConnected', 'true');
 
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('connect')) {
+             url.searchParams.delete('connect');
+             window.history.replaceState({}, document.title, url.pathname);
+        }
+
       } catch (error) {
         console.error("User rejected request:", error);
       }
@@ -120,22 +126,27 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!window.ethereum) return;
-
     const init = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldAutoConnect = urlParams.get('connect') === 'true';
+      const storedConnection = localStorage.getItem('isWalletConnected') === 'true';
 
-      const shouldConnect = localStorage.getItem('isWalletConnected') === 'true';
+      if (!window.ethereum) return;
 
-      if (!shouldConnect) return;
-
-      try {
-          const accounts = await window.ethereum.request({ method: "eth_accounts" });
-          if (accounts.length > 0) {
-              setAccount(accounts[0]);
-              setProvider(new ethers.BrowserProvider(window.ethereum));
+      if (shouldAutoConnect || storedConnection) {
+          try {
+              if (shouldAutoConnect) {
+                  await connectWallet();
+              } else {
+                  const accounts = await window.ethereum.request({ method: "eth_accounts" });
+                  if (accounts.length > 0) {
+                      setAccount(accounts[0]);
+                      setProvider(new ethers.BrowserProvider(window.ethereum));
+                  }
+              }
+          } catch (e) {
+              console.error(e);
           }
-      } catch (e) {
-          console.error(e);
       }
     };
 
