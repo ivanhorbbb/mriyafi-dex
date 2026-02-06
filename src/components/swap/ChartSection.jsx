@@ -70,17 +70,14 @@ const ChartSection = memo(({ timeframe, setTimeframe, payToken, receiveToken, di
                     </div>
                 </div>
 
-                {/* 🔥 FIX: Chart Container - Absolute fill to force height */}
-                <div className="flex-grow relative w-full min-h-[300px]">
-                    <div className="absolute inset-0 w-full h-full">
-                        <AnimatedChart 
-                            timeframe={timeframe} 
-                            color={themeStyles.isGold ? '#f0dfae' : '#00d4ff'} 
-                            currentPrice={chartPrice}
-                            onStatsUpdate={onStatsUpdate}
-                            currencySymbol={receiveToken.symbol}
-                        />
-                    </div>
+                <div className="w-full h-[300px] md:h-auto md:flex-grow relative mt-auto">
+                    <AnimatedChart 
+                        timeframe={timeframe} 
+                        color={themeStyles.isGold ? '#f0dfae' : '#00d4ff'} 
+                        currentPrice={chartPrice}
+                        onStatsUpdate={onStatsUpdate}
+                        currencySymbol={receiveToken.symbol}
+                    />
                 </div>
 
                 {/* Chart Glow */}

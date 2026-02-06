@@ -169,6 +169,7 @@ function App() {
       window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
       window.ethereum.removeListener('chainChanged', () => window.location.reload());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const t = translations[lang];
