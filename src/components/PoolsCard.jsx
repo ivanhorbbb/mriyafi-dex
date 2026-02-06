@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, memo } from 'react';
-import PoolDetail from './PoolDetail';
 
+import PoolDetail from './PoolDetail';
 import PoolItem from './pool/PoolItem';
 import PoolsHeader from './pool/PoolsHeader';
 import CreatePoolModal from './pool/CreatePoolModal';
@@ -186,6 +186,7 @@ const PoolsCard = ({ t }) => {
 
         setAllPools(prevPools => [newPool, ...prevPools]);
         setSelectedPool(newPool);
+        setIsCreateModalOpen(false);
     };
 
     const filteredPools = useMemo(() => {
@@ -248,10 +249,13 @@ const PoolsCard = ({ t }) => {
         <div className="w-full flex justify-center p-4 animate-fade-in relative z-10">
             {/* Main Wrapper */}
             <div className="
-                relative w-full max-w-5xl h-[800px] 
+                relative w-full max-w-5xl 
+                min-h-[600px] h-auto
                 rounded-[3rem] 
                 shadow-2xl 
                 bg-[#131823]/95 backdrop-blur-md 
+                border border-white/10
+                flex flex-col
                 overflow-hidden isolate
             ">
                 <div className="absolute inset-0 rounded-[3rem] border border-white/10 pointer-events-none z-50"></div>
@@ -267,22 +271,24 @@ const PoolsCard = ({ t }) => {
                 />
 
                 {/* List Section */}
-                <div className="h-full overflow-y-auto overflow-x-hidden px-8 sm:px-10 pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
+                <div className="relative z-10 w-full flex-grow p-4 md:p-8 space-y-6 md:space-y-8">
                     {filteredPools && filteredPools.length > 0 ? (
-                        filteredPools.map((pool) => (
-                            <PoolItem
-                                key={pool.id}
-                                pool={pool}
-                                t={safeT}
-                                onSelect={handleSelectPool}
-                                onPoolDataUpdate={handlePoolDataUpdate}
-                            />
-                        ))
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredPools.map((pool) => (
+                                <PoolItem
+                                    key={pool.id}
+                                    pool={pool}
+                                    t={safeT}
+                                    onSelect={handleSelectPool}
+                                    onPoolDataUpdate={handlePoolDataUpdate}
+                                />
+                            ))}
+                        </div>
                     ) : (
-                        <div className="text-center text-gray-500 mt-20 text-xl">
-                            {safeT.noPoolsFound} <br/>
+                        <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500 text-xl">
+                            <p>{safeT.noPoolsFound}</p>
                             <span 
-                                className="text-[#00d4ff] cursor-pointer hover:underline"
+                                className="text-[#00d4ff] cursor-pointer hover:underline mt-2 inline-block"
                                 onClick={() => setIsCreateModalOpen(true)}
                             >
                                 {safeT.tryAdjustingFilters}

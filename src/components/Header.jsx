@@ -124,13 +124,11 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                                         shadow-lg hover:border-[#00d4ff]/50 transition-all duration-300
                                     "
                                 >
-                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-white/20"></div>
+                                    <div className="w-5 h-5 md:w-5 md:h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-white/20 shrink-0"></div>
                                     
-                                    <span className="text-[#00d4ff]">
-                                        {formatAddress(account)}
-                                    </span>
+                                    <span className="text-[#00d4ff] hidden sm:inline">{formatAddress(account)}</span>
                                     
-                                    <ChevronDown size={16} className="text-gray-400 group-hover:rotate-180 transition-transform duration-300"/>
+                                    <ChevronDown size={14} className="text-gray-400 group-hover:rotate-180 transition-transform duration-300"/>
                                 </button>
 
                                 <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-[#131823] border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-[200]">
