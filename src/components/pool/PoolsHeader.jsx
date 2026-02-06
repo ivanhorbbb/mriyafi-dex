@@ -33,37 +33,27 @@ const PoolsHeader = ({
                         />
                     </div>
 
-                    <div className="flex gap-3 w-full md:w-auto">
-                        
-                        {/* HOT FILTER */}
-                        <button 
-                            onClick={() => setIsHotFilter(!isHotFilter)}
-                            className={`
-                                flex-1 md:flex-none flex items-center justify-center gap-2 border rounded-2xl px-6 py-3 transition-colors backdrop-blur-md shadow-lg font-medium whitespace-nowrap
-                                ${isHotFilter
-                                    ? 'bg-[#f0dfae]/20 border-[#f0dfae] text-[#f0dfae]'
-                                    : 'bg-[#0a0e17]/50 border-white/10 text-white hover:bg-white/5'
-                                }
-                            `}
-                        >
-                            {t.hot} <Flame size={22} className={isHotFilter ? "fill-[#f0dfae]" : "text-orange-500 fill-orange-500"} />
-                            <ChevronRight size={20} className="text-gray-400 ml-1 hidden sm:block" />
-                        </button>
+                    {/* HOT FILTER BUTTON */}
+                    <button 
+                        onClick={() => setIsHotFilter(!isHotFilter)}
+                        className={`flex items-center gap-2 border rounded-2xl px-6 py-3 transition-colors backdrop-blur-md shadow-lg font-medium whitespace-nowrap
+                        ${isHotFilter
+                            ? 'bg-[#f0dfae]/20 border-[#f0dfae] text-[#f0dfae]'
+                            : 'bg-[#0a0e17]/50 border-white/10 text-white hover:bg-white/5'
+                        }`}
+                    >
+                        {t.hot} <Flame size={22} className={isHotFilter ? "fill-[#f0dfae]" : "text-orange-500 fill-orange-500"} />
+                        <ChevronRight size={20} className="text-gray-400 ml-1" />
+                    </button>
 
-                        {/* CREATE POOL */}
-                        <button 
-                            onClick={onCreatePool}
-                            className="
-                                flex items-center justify-center 
-                                bg-[#00d4ff] hover:bg-[#00b3d6] 
-                                text-[#0a0e17] rounded-2xl px-5 py-3 
-                                transition-colors shadow-lg shadow-[#00d4ff]/20 font-bold
-                            "
-                            title={t.createPool}
-                        >
-                            <Plus size={24} />
-                        </button>
-                    </div>
+                    {/* CREATE POOL BUTTON */}
+                    <button 
+                        onClick={onCreatePool}
+                        className="flex items-center justify-center bg-[#00d4ff] hover:bg-[#00b3d6] text-[#0a0e17] rounded-2xl px-4 py-3 transition-colors shadow-lg shadow-[#00d4ff]/20 font-bold"
+                        title={t.createPool}
+                    >
+                        <Plus size={20} className="mr-2" />
+                    </button>
                 </div>
             </div>
         </div>
