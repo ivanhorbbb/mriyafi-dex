@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import logoImg from '../assets/img/brand/logo.png'; 
-import { Wallet, LogOut, ChevronDown } from 'lucide-react';
+import { Wallet, LogOut, ChevronDown, Menu, X } from 'lucide-react';
 
 const formatAddress = (addr) => {
     return addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length-4)}` : '';
@@ -9,6 +9,8 @@ const formatAddress = (addr) => {
 const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connectWallet, disconnectWallet  }) => {
     const tabsRef = useRef({});
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, opacity: 0});
+
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const currentTab = tabsRef.current[activeTab];
@@ -29,6 +31,11 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
             return baseClass + "text-[#00d4ff] drop-shadow-[0_0_8px_rgba(0,212,255,0.6)] font-semibold";
         }
         return baseClass + "text-gray-400 hover:text-white font-medium";
+    };
+
+    const handleMobileClick = (tab) => {
+        setActiveTab(tab);
+        setIsMobileMenuOpen(false);
     };
 
     return (
@@ -81,20 +88,12 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                     {/* LANGUAGE */}
                     <button 
                         onClick={toggleLang}
-                        className="hidden sm:flex items-center gap-1 cursor-pointer hover:bg-white/5 px-3 py-1.5 rounded-lg border border-transparent hover:border-white/10 transition-all"
+                        className="hidden sm:flex items-center gap-1 cursor-pointer hover:bg-white/5 px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-transparent hover:border-white/10 transition-all"
                     >
                         <span className="text-gray-600">[</span>
-                        
-                        <span className={`transition-all ${lang === 'en' ? 'text-[#00d4ff] font-bold shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(0,212,255,0.8)]' : 'text-gray-500 hover:text-gray-300'}`}>
-                            EN
-                        </span>
-
+                        <span className={`transition-all ${lang === 'en' ? 'text-[#00d4ff] font-bold' : 'text-gray-500'}`}>EN</span>
                         <span className="text-gray-600">/</span>
-
-                        <span className={`transition-all ${lang === 'ua' ? 'text-[#00d4ff] font-bold shadow-cyan-500/50 drop-shadow-[0_0_5px_rgba(0,212,255,0.8)]' : 'text-gray-500 hover:text-gray-300'}`}>
-                            UA
-                        </span>
-
+                        <span className={`transition-all ${lang === 'ua' ? 'text-[#00d4ff] font-bold' : 'text-gray-500'}`}>UA</span>
                         <span className="text-gray-600">]</span>
                     </button>
 
@@ -149,8 +148,49 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                             </div>
                         )}
                     </div>
+
+                    <button 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
                 </div>
             </div>
+
+            {isMobileMenuOpen && (
+                <div className="
+                    absolute top-[calc(100%+10px)] left-4 right-4 
+                    bg-[#0a0e17]/95 backdrop-blur-2xl 
+                    border border-white/10 rounded-2xl 
+                    p-4 shadow-2xl z-[90] md:hidden
+                    flex flex-col gap-2 animate-fade-in
+                ">
+                    {['swap', 'pools', 'earn'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => handleMobileClick(tab)}
+                            className={`
+                                w-full text-left px-4 py-3 rounded-xl font-bold text-lg transition-all
+                                ${activeTab === tab 
+                                    ? 'bg-[#00d4ff]/10 text-[#00d4ff] border border-[#00d4ff]/30' 
+                                    : 'text-gray-300 hover:bg-white/5'}
+                            `}
+                        >
+                            {t[tab] || tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
+                    
+                    <div className="h-px bg-white/10 my-2" />
+                    
+                    <div className="flex justify-between items-center px-2">
+                        <span className="text-gray-400 text-sm">Language / Мова</span>
+                        <button onClick={toggleLang} className="text-[#00d4ff] font-bold border border-[#00d4ff]/30 px-3 py-1 rounded-lg">
+                            {lang === 'en' ? 'ENG' : 'UKR'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 };
