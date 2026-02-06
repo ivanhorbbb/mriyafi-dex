@@ -10,17 +10,17 @@ const PoolsHeader = ({
     onCreatePool
 }) => {
     return (
-        <div className="relative z-40 w-full px-4 pt-6 md:px-10 md:pt-10">
-            <div className="relative">
-                <div className="text-center mb-6 md:mb-8">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+        <div className="absolute top-0 left-0 right-0 z-40 h-[280px] w-full bg-gradient-to-b from-[#131823] from-40% via-[#131823]/95 via-70% to-transparent pointer-events-none px-8 pt-10 sm:px-10">
+            <div className="pointer-events-auto relative">
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">
                         {t.title} <span className="text-gray-500 font-normal">/ {t.subtitle}</span>
                     </h2>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-4">
                     {/* SEARCH INPUT */}
-                    <div className="relative w-full md:flex-grow">
+                    <div className="relative flex-grow">
                         <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
                             <Search size={24} />
                         </div>
@@ -29,18 +29,10 @@ const PoolsHeader = ({
                             placeholder={t.searchPlaceholder}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="
-                                w-full 
-                                bg-[#0a0e17]/50 border border-white/10 
-                                rounded-2xl py-3 pl-12 pr-4 
-                                text-lg md:text-xl text-white placeholder-gray-500 
-                                focus:outline-none focus:border-[#00d4ff]/40 focus:bg-[#0a0e17]/70 
-                                backdrop-blur-md transition-colors shadow-lg
-                            "
+                            className="w-full bg-[#0a0e17]/50 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/40 focus:bg-[#0a0e17]/70 backdrop-blur-md transition-colors shadow-lg"
                         />
                     </div>
 
-                    {/* HOT FILTER BUTTON */}
                     <div className="flex gap-3 w-full md:w-auto">
                         
                         {/* HOT FILTER */}
@@ -58,7 +50,7 @@ const PoolsHeader = ({
                             <ChevronRight size={20} className="text-gray-400 ml-1 hidden sm:block" />
                         </button>
 
-                        {/* CREATE POOL BUTTON */}
+                        {/* CREATE POOL */}
                         <button 
                             onClick={onCreatePool}
                             className="
