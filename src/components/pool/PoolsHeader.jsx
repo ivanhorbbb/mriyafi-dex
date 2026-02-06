@@ -10,10 +10,10 @@ const PoolsHeader = ({
     onCreatePool
 }) => {
     return (
-        <div className="relative w-full z-40 bg-gradient-to-b from-[#131823] via-[#131823]/95 to-transparent px-4 pt-8 pb-4 md:px-10 md:pt-10">
-            <div className="relative">
-                <div className="text-center mb-6 md:mb-8">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+        <div className="absolute top-0 left-0 right-0 z-40 h-[280px] w-full bg-gradient-to-b from-[#131823] from-40% via-[#131823]/95 via-70% to-transparent pointer-events-none px-8 pt-10 sm:px-10">
+            <div className="pointer-events-auto relative">
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">
                         {t.title} <span className="text-gray-500 font-normal">/ {t.subtitle}</span>
                     </h2>
                 </div>
