@@ -39,12 +39,13 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
     };
 
     return (
-        <div className="w-full flex justify-center pt-8 px-6 relative z-[100]">
+        <div className="w-full flex justify-center pt-4 px-4 md:pt-8 md:px-6 relative z-[100]">
             <div className="
                 relative w-full max-w-6xl 
                 flex items-center justify-between 
-                px-8 py-5
-                rounded-[2rem] bg-[#0a0e17]/80 backdrop-blur-xl 
+                px-4 py-3 md:px-8 md:py-5
+                gap-4
+                rounded-[1.5rem] md:rounded-[2rem] bg-[#0a0e17]/80 backdrop-blur-xl 
                 border border-white/10 shadow-2xl
             ">
                 {/* LOGO */}
@@ -83,8 +84,8 @@ const Header = ({ activeTab, setActiveTab, lang, toggleLang, t, account, connect
                 </nav>
 
                 {/* RIGHT PART */}
-                <div className="flex items-center gap-6 text-sm font-mono select-none">
-                    
+                <div className="flex items-center gap-2 md:gap-6 text-sm font-mono select-none">
+                     
                     {/* LANGUAGE */}
                     <button 
                         onClick={toggleLang}
