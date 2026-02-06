@@ -35,91 +35,84 @@ const PoolItem = ({ pool, t, onSelect, onPoolDataUpdate }) => {
 
     return (
         <div 
+            className="relative group cursor-pointer isolate min-h-[140px] will-change-transform" 
             onClick={handleClick}
-            className={`
-                group relative cursor-pointer isolate 
-                w-full
-                bg-[#131823]/80 backdrop-blur-xl 
-                border hover:border-opacity-100 transition-all duration-300
-                rounded-3xl p-5 md:p-6
-                hover:-translate-y-1 hover:shadow-xl
-                flex flex-col md:flex-row md:items-center justify-between gap-6
-                ${isHot 
-                    ? 'border-[#f0dfae]/30 shadow-[0_10px_30px_-10px_rgba(240,223,174,0.1)]' 
-                    : 'border-white/5 hover:border-[#00d4ff]/30 hover:shadow-[0_10px_30px_-10px_rgba(0,212,255,0.1)]'
-                }
-            `}
+            style={{ contain: 'layout style' }}
         >
-            {/* GLOW EFFECT (Background) */}
-            <div 
-                className="absolute -right-10 -top-10 w-40 h-40 rounded-full pointer-events-none opacity-20 blur-3xl transition-opacity group-hover:opacity-30"
-                style={{ background: chartColor }}
-            />
+            {/* LAYER 3 Decoration */}
+            <div className={`
+                absolute -bottom-6 left-8 right-8 h-full rounded-[2.5rem] border z-[-20]
+                transition-transform duration-500 scale-95 opacity-40
+                ${isHot ? 'border-[#f0dfae]/20 bg-[#f0dfae]/5' : 'border-[#00d4ff]/20 bg-[#00d4ff]/5'}
+            `}></div>
+            
+            {/* LAYER 2 Shadow */}
+            <div className={`
+                absolute -bottom-3 left-4 right-4 h-full rounded-[2.5rem] border z-[-10]
+                transition-transform duration-300 scale-[0.98] shadow-lg bg-[#131823]
+                ${isHot ? 'border-[#f0dfae]/40' : 'border-[#00d4ff]/40'}
+            `}></div>
+
+            {/* MAIN LAYER */}
+            <div className={`
+                relative z-10 rounded-[2.5rem] p-6 border transition-all duration-300
+                bg-[#131823] overflow-hidden
+                ${isHot 
+                    ? `border-[#f0dfae]/80 shadow-[0_0_20px_rgba(240,223,174,0.1)] group-hover:shadow-[0_0_30px_rgba(240,223,174,0.2)]`
+                    : `border-[#00d4ff]/70 shadow-[0_0_20px_rgba(0,212,255,0.1)] group-hover:shadow-[0_0_30px_rgba(0,212,255,0.2)]`
+                }
+            `}>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
                     
-                    {/* LEFT PART: Tokens & Stats */}
-            <div className="flex flex-col gap-4 z-10 w-full md:w-auto">
-                
-                {/* Header: Icons + Name */}
-                <div className="flex items-center gap-4">
-                    <div className="flex -space-x-3 shrink-0">
-                        <img src={pool.token0.logo} alt={pool.token0.symbol} className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#131823] bg-black" />
-                        <img src={pool.token1.logo} alt={pool.token1.symbol} className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-[#131823] bg-black" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-xl md:text-2xl font-bold text-white leading-none group-hover:text-[#00d4ff] transition-colors">
-                                {pool.token0.symbol} / {pool.token1.symbol}
-                            </h3>
-                            {isHot && <Sparkles size={16} className="text-[#f0dfae] animate-pulse" />}
+                    {/* LEFT PART */}
+                    <div className="flex flex-col gap-3 w-full md:w-auto">
+                        <div className="flex items-center gap-4">
+                            <div className="flex -space-x-3">
+                                <img src={pool.token0.logo} alt={pool.token0.symbol} className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md bg-black" loading="lazy" />
+                                <img src={pool.token1.logo} alt={pool.token1.symbol} className="w-10 h-10 rounded-full border-2 border-[#131823] shadow-md bg-black" loading="lazy" />
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-bold text-white tracking-tight">{pool.token0.symbol} / {pool.token1.symbol}</span>
+                                <span className="text-m font-bold text-gray-500">{pool.version}</span>
+                            </div>
                         </div>
-                        <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5 inline-block mt-1">
-                            {pool.version}
-                        </span>
+
+                        <div className="flex items-center gap-3 text-xs md:text-sm text-gray-400 font-mono mt-1">
+                            <span>{t.tvl}: <span className="text-white font-semibold">{displayTVL}</span></span>
+                            <span className="text-gray-600">|</span>
+                            <span>{t.vol}: <span className="text-white font-semibold">{displayVOL}</span></span>
+                            <span className="text-gray-600">|</span>
+                            <span className={`${textColor} font-bold flex items-center gap-1`}>
+                                {t.apr}: {displayAPR}
+                                {isHot && <Sparkles size={12} />}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* RIGHT PART */}
+                    <div className="flex flex-col items-end gap-4 w-full md:w-auto min-w-[180px]">
+                        <div className="w-full md:w-48 h-16 opacity-90 relative">
+                           <MiniChart color={chartColor} id={pool.id} />
+                        </div>
+
+                        <button 
+                            className={`
+                            w-full md:w-auto px-6 py-2 rounded-xl text-sm font-bold transition-colors border tracking-wide shadow-md
+                            ${bgColor}/10 ${textColor} ${borderColor}/30 hover:${bgColor}/20
+                        `}>
+                            {t.deposit}
+                        </button>
                     </div>
                 </div>
 
-                {/* Stats Row */}
-                <div className="flex items-center gap-3 text-xs md:text-sm text-gray-400 font-mono">
-                    <div className="flex flex-col">
-                        <span className="uppercase text-[10px] tracking-wider opacity-60">{t.tvl}</span>
-                        <span className="text-white font-semibold">{displayTVL}</span>
-                    </div>
-                    <div className="w-px h-6 bg-white/10 mx-1"></div>
-                    <div className="flex flex-col">
-                        <span className="uppercase text-[10px] tracking-wider opacity-60">{t.vol}</span>
-                        <span className="text-white font-semibold">{displayVOL}</span>
-                    </div>
-                    <div className="w-px h-6 bg-white/10 mx-1"></div>
-                    <div className="flex flex-col">
-                        <span className="uppercase text-[10px] tracking-wider opacity-60">{t.apr}</span>
-                        <span className={`${textColor} font-bold`}>{displayAPR}</span>
-                    </div>
-                </div>
-            </div>
-
-                    {/* RIGHT PART: Chart & Button */}
-            <div className="flex flex-col md:flex-row items-end md:items-center gap-4 w-full md:w-auto z-10">
-                
-                {/* Mini Chart (Full width on mobile, fixed on desktop) */}
-                <div className="w-full md:w-32 h-12 relative opacity-80 group-hover:opacity-100 transition-opacity">
-                    <MiniChart color={chartColor} id={pool.id} />
-                </div>
-
-                {/* Deposit Button */}
-                <button 
-                    className={`
-                        w-full md:w-auto px-6 py-3 rounded-xl 
-                        text-sm font-bold transition-all border tracking-wide shadow-lg
-                        flex items-center justify-center gap-2
-                        ${isHot 
-                            ? 'bg-[#f0dfae]/10 text-[#f0dfae] border-[#f0dfae]/30 hover:bg-[#f0dfae] hover:text-[#0a0e17]' 
-                            : 'bg-[#1a2c38] text-[#00d4ff] border-[#00d4ff]/30 hover:bg-[#00d4ff] hover:text-[#0a0e17]'
-                        }
-                    `}
-                >
-                    {t.deposit}
-                    <ArrowUpRight size={16} />
-                </button>
+                {/* GLOW EFFECT */}
+                <div 
+                    className="absolute -right-10 -top-10 w-64 h-64 rounded-full pointer-events-none opacity-15"
+                    style={{
+                        background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
+                        transform: 'translateZ(0)'
+                    }}
+                />
             </div>
         </div>
     );
