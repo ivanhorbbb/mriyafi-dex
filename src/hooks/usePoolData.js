@@ -42,6 +42,13 @@ export const usePoolData = (tokenA, tokenB) => {
 
         const fetchReserves = async () => {
             try {
+
+                if (!window.ethereum) {
+                    console.log("Mobile browser detected (no wallet). Showing default data.");
+                    setLoading(false);
+                    return;
+                }
+
                 if (!providerRef.current) {
                     providerRef.current = await getProvider();
                 }
