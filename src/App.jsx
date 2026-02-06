@@ -50,7 +50,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('swap');
   const [lang, setLang] = useState('en');
 
-  const { balances, refetch } = useTokenBalances(provider, account);
+  const safeProvider = useMemo(() => {
+      return provider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+  }, [provider]);
+
+  const { balances, refetch } = useTokenBalances(safeProvider, account);
 
   const connectWallet = useCallback(async () => {
 
@@ -127,11 +131,11 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
+      if (!window.ethereum) return;
+
       const urlParams = new URLSearchParams(window.location.search);
       const shouldAutoConnect = urlParams.get('connect') === 'true';
       const storedConnection = localStorage.getItem('isWalletConnected') === 'true';
-
-      if (!window.ethereum) return;
 
       if (shouldAutoConnect || storedConnection) {
           try {
@@ -164,12 +168,16 @@ function App() {
         }
     };
 
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', () => window.location.reload());
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', () => window.location.reload());
+    }
 
     return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', () => window.location.reload());
+      if (window.ethereum) {
+          window.ethereum.removeListener?.('accountsChanged', handleAccountsChanged);
+          window.ethereum.removeListener?.('chainChanged', () => window.location.reload());
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
