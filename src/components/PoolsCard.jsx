@@ -276,7 +276,7 @@ const PoolsCard = ({ t }) => {
                 {/* List Section */}
                 <div className="h-full overflow-y-auto overflow-x-hidden px-4 md:px-10 pt-[360px] md:pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
                     {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-4 pb-4">
                             {filteredPools.map((pool) => (
                                 <PoolItem
                                     key={pool.id}
