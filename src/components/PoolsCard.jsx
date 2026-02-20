@@ -6,6 +6,7 @@ import PoolsHeader from './pool/PoolsHeader';
 import CreatePoolModal from './pool/CreatePoolModal';
 
 import { TOKENS } from '../constants/tokens';
+import { supabase } from '../supabaseClient';
 
 import usdc from '../assets/img/tokens/usdc.png';
 import wbtc from '../assets/img/tokens/wrapped-btc.png';
@@ -108,25 +109,114 @@ const RAW_POOLS_DATA = [
 ];
 
 const PoolsCard = ({ t }) => {
-    const [allPools, setAllPools] = useState(() => {
-        const savedPools = localStorage.getItem('userPools');
-        
-        let baseData;
-        if (savedPools) {
-            baseData = JSON.parse(savedPools);
-        } else {
-            baseData = RAW_POOLS_DATA;
+    const [allPools, setAllPools] = useState([]);
+    const [selectedPool, setSelectedPool] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isHotFilter, setIsHotFilter] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPools();
+    }, []);
+
+    const fetchPools = async () => {
+        try { 
+            setIsLoading(true);
+            const { data, error } = await supabase.from('pools').select('*');
+            if (error) throw error;
+
+            const dbPools = (data || []).map(dbPool => {
+                const enrichedToken0 = injectTokenData({ symbol: dbPool.token0 });
+                const enrichedToken1 = injectTokenData({ symbol: dbPool.token1 });
+
+                return enrichPoolData({
+                    id: `db_${dbPool.id}`,
+                    token0: enrichedToken0,
+                    token1: enrichedToken1,
+                    version: 'V2',
+                    tvl: '$0',
+                    vol: '$0',
+                    apr: '0%'
+                });
+            });
+
+            const rawEnriched = RAW_POOLS_DATA.map(pool => {
+                const poolWithAddresses = {
+                    ...pool,
+                    token0: injectTokenData(pool.token0),
+                    token1: injectTokenData(pool.token1)
+                };
+                return enrichPoolData(poolWithAddresses);
+            });
+
+            const rawPairs = rawEnriched.map(p => `${p.token0.symbol}-${p.token1.symbol}`);
+            const uniqueDbPools = dbPools.filter(p => {
+                const pair1 = `${p.token0.symbol}-${p.token1.symbol}`;
+                const pair2 = `${p.token1.symbol}-${p.token0.symbol}`;
+                return !rawPairs.includes(pair1) && !rawPairs.includes(pair2);
+            });
+
+            setAllPools([...uniqueDbPools, ...rawEnriched]);
+        } catch (error) {
+            console.error('Erorr with loading DB:', error);
+            const fallbackPools = RAW_POOLS_DATA.map(p => enrichPoolData({...p, token0: injectTokenData(p.token0), token1: injectTokenData(p.token1) }));
+            setAllPools(fallbackPools);
+        } finally {
+            setIsLoading(false);
         }
-        
-        return baseData.map(pool => {
-            const poolWithAddresses = {
-                ...pool,
-                token0: injectTokenData(pool.token0),
-                token1: injectTokenData(pool.token1)
+    }
+
+    const handleSelectPool = useCallback((pool) => {
+        setSelectedPool(pool);
+    }, []);
+
+    const handleBack = useCallback(() => {
+        setSelectedPool(null);
+    }, []);
+
+    const handleCreatePool = async (tokenA, tokenB) => {
+        const exists = allPools.find(p => 
+            (p.token0.symbol === tokenA.symbol && p.token1.symbol === tokenB.symbol) ||
+            (p.token0.symbol === tokenB.symbol && p.token1.symbol === tokenA.symbol)
+        );
+
+        if (exists) {
+            setSelectedPool(exists);
+            setIsCreateModalOpen(false);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('pools')
+                .insert([{ token0: tokenA.symbol, token1: tokenB.symbol }])
+                .select();
+
+            if (error) throw error;
+
+            const newDbPool = data[0];
+            const enrichedToken0 = injectTokenData({ symbol: newDbPool.token0, logo: tokenA.img, ...tokenA });
+            const enrichedToken1 = injectTokenData({ symbol: newDbPool.token1, logo: tokenB.img, ...tokenB });
+            
+            let newPool = { 
+                id: `db_${newDbPool.id}`, 
+                token0: enrichedToken0, 
+                token1: enrichedToken1, 
+                version: 'V2', 
+                tvl: '$0', vol: '$0', apr: '0%' 
             };
-            return enrichPoolData(poolWithAddresses);
-        });
-    });
+            newPool = enrichPoolData(newPool);
+            
+            setAllPools(prevPools => [newPool, ...prevPools]);
+            setSelectedPool(newPool);
+            setIsCreateModalOpen(false);
+
+        } catch (error) {
+            console.error("Error with creating pool in Db:", error);
+            alert("Failed to save pool to database!");
+        }
+    };
 
     const handlePoolDataUpdate = useCallback((poolId, realStats) => {
         setAllPools(prevPools => {
@@ -142,68 +232,12 @@ const PoolsCard = ({ t }) => {
         });
     }, []);
 
-    const [selectedPool, setSelectedPool] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isHotFilter, setIsHotFilter] = useState(false);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    useEffect(() => {
-        localStorage.setItem('userPools', JSON.stringify(allPools));
-    }, [allPools]);
-
-    const handleSelectPool = useCallback((pool) => {
-        setSelectedPool(pool);
-    }, []);
-
-    const handleBack = useCallback(() => {
-        setSelectedPool(null);
-    }, []);
-
-    const handleCreatePool = (tokenA, tokenB) => {
-        const exists = allPools.find(p => 
-            (p.token0.symbol === tokenA.symbol && p.token1.symbol === tokenB.symbol) ||
-            (p.token0.symbol === tokenB.symbol && p.token1.symbol === tokenA.symbol)
-        );
-
-        if (exists) {
-            setSelectedPool(exists);
-            return;
-        }
-
-        const enrichedToken0 = injectTokenData({ symbol: tokenA.symbol, logo: tokenA.img, ...tokenA });
-        const enrichedToken1 = injectTokenData({ symbol: tokenB.symbol, logo: tokenB.img, ...tokenB });
-        
-        let newPool = {
-            id: Date.now(),
-            token0: enrichedToken0,
-            token1: enrichedToken1,
-            version: 'V2',
-            tvl: '$0',
-            vol: '$0',
-            apr: '0%'
-        };
-        newPool = enrichPoolData(newPool);
-
-        setAllPools(prevPools => [newPool, ...prevPools]);
-        setSelectedPool(newPool);
-        setIsCreateModalOpen(false);
-    };
-
     const filteredPools = useMemo(() => {
         if (!allPools) return [];
-
         return allPools.filter(pool => {
-            const symbol0 = pool.token0?.symbol || '';
-            const symbol1 = pool.token1?.symbol || '';
-            
             const query = searchQuery.toLowerCase().trim();
-
-            const matchesSearch = 
-                symbol0.toLowerCase().includes(query) ||
-                symbol1.toLowerCase().includes(query);
-            
+            const matchesSearch = pool.token0?.symbol.toLowerCase().includes(query) || pool.token1?.symbol.toLowerCase().includes(query);
             const matchesHot = isHotFilter ? pool.isHot : true;
-
             return matchesSearch && matchesHot;
         });
     }, [searchQuery, isHotFilter, allPools]);
@@ -275,8 +309,12 @@ const PoolsCard = ({ t }) => {
 
                 {/* List Section */}
                 <div className="h-full overflow-y-auto overflow-x-hidden px-4 md:px-10 pt-[360px] md:pt-[220px] pb-10 space-y-12 custom-scrollbar relative z-10">
-                    {filteredPools && filteredPools.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4 pb-4">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-40 md:h-full">
+                            <div className="w-10 h-10 border-4 border-[#00d4ff]/20 border-t-[#00d4ff] rounded-full animate-spin"></div>
+                        </div>
+                    ) : filteredPools && filteredPools.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4">
                             {filteredPools.map((pool) => (
                                 <PoolItem
                                     key={pool.id}
