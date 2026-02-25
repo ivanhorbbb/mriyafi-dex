@@ -92,12 +92,12 @@ const PoolItem = ({ pool, t, onSelect, onPoolDataUpdate }) => {
 
                     {/* RIGHT PART */}
                     <div className="flex flex-col items-end gap-4 w-full md:w-auto min-w-[180px]">
-                        <div className="w-full md:w-48 h-16 opacity-90 relative">
+                        <div className="w-full md:w-48 h-16 opacity-90 flex justify-center md:justify-end items-center mt-2 md:mt-0 pointer-events-none">
                            <MiniChart 
                                 poolId={`${pool.token0.symbol}-${pool.token1.symbol}`} 
-                                color={pool.chartColor || "#00d4ff"} 
-                                width={100} 
-                                height={35} 
+                                color={chartColor || "#00d4ff"} 
+                                width={160}
+                                height={55}
                             />
                         </div>
 
