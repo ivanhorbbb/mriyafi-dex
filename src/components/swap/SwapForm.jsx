@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Settings, ChevronDown, ArrowUpDown, Info, Fuel } from 'lucide-react';
+import { Settings, ChevronDown, ArrowUpDown, Info, Fuel, Zap, SlidersHorizontal } from 'lucide-react';
 import { FocusGlowInput, AnimatedNumber, AnimatedIcon, AnimatedText, ShimmerButton } from '../Animations'; 
 
 const SwapForm = ({
@@ -23,7 +23,9 @@ const SwapForm = ({
     isSwapping,
     isInsufficientBalance,
     isEnterAmount,
-    handleSwap
+    handleSwap,
+    slippage,
+    minimumReceived
 }) => {
     
     let buttonText = t.button;
@@ -115,8 +117,8 @@ const SwapForm = ({
                         <span className="text-xs text-gray-500 flex gap-1">
                             ≈ $<AnimatedNumber value={receiveUsdValue} />
                         </span>
-                        <span className="text-xs text-green-400/90 font-mono flex gap-1">
-                            ($<AnimatedNumber value="0.12" /> {t.cheaper})
+                        <span className={`text-xs font-mono flex items-center gap-1 ${themeStyles.textAccent} opacity-80`}>
+                            <Zap size={12} className={themeStyles.textAccent} /> Auto Router
                         </span>
                     </div>
                 </div>
@@ -131,8 +133,25 @@ const SwapForm = ({
                             <AnimatedText content={receiveToken.symbol} />
                         </span>
                     </div>
+                    {parseFloat(receiveAmount) > 0 && (
+                        <div className="flex justify-between text-sm text-gray-400">
+                            <span className="flex items-center gap-2"><ArrowUpDown size={14}/> Minimum Received</span>
+                            <span className="font-mono text-gray-300 flex items-center gap-1">
+                                <AnimatedNumber value={minimumReceived} />
+                                <AnimatedText content={receiveToken.symbol} />
+                            </span>
+                        </div>
+                    )}
+                    
                     <div className="flex justify-between text-sm text-gray-400">
-                        <span className="flex items-center gap-2"><Fuel size={14}/> {t.gas}</span>
+                        <span className="flex items-center gap-2"><SlidersHorizontal size={14}/> Slippage Tolerance</span>
+                        <span className="font-mono text-gray-300">
+                            {slippage}%
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm text-gray-400">
+                        <span className="flex items-center gap-2"><Fuel size={14}/> {t.gas || "Network Fee"}</span>
                         <span className={`font-mono flex items-center ${themeStyles.textAccent}`}>
                             $<AnimatedNumber value={gasPriceUsd || "0.00"} />
                         </span>

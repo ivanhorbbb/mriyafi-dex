@@ -296,6 +296,10 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
         ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6) 
         : marketRate;
 
+    const minimumReceived = receiveAmount && !isNaN(receiveAmount)
+        ? (parseFloat(receiveAmount) / parseFloat(payAmount)).toFixed(6)
+        : marketRate;
+
     return(
         <div className="w-full flex justify-center p-0 md:p-4 relative z-10">
             
@@ -338,6 +342,8 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
                         isInsufficientBalance={isInsufficientBalance}
                         isEnterAmount={isEnterAmount}
                         handleSwap={handleSwap}
+                        slippage={slippage}
+                        minimumReceived={minimumReceived}
                     />
                 </div>
             </div>
