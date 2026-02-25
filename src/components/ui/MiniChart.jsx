@@ -1,8 +1,7 @@
 import { useMemo, memo } from 'react';
 
-const MiniChart = ({ poolId, width = 120, height = 40, color = "#00d4ff" }) => {
-    
-    const pathData = useMemo(() => {
+const MiniChart = ({ poolId, width = 120, height = 40, color = "#00d4ff", withFill = false }) => {
+    const { linePathData, fillPathData } = useMemo(() => {
         let hash = 0;
         const str = String(poolId);
         for (let i = 0; i < str.length; i++) {
@@ -25,9 +24,12 @@ const MiniChart = ({ poolId, width = 120, height = 40, color = "#00d4ff" }) => {
         const max = Math.max(...pts);
         const range = max - min || 1;
 
+        const paddingY = height * 0.1;
+        const usableHeight = height - paddingY * 2;
+
         const mapped = pts.map((v, i) => ({
             x: (i / 19) * width,
-            y: height - ((v - min) / range) * (height * 0.8) - (height * 0.1)
+            y: height - paddingY - ((v - min) / range) * usableHeight
         }));
 
         let d = `M ${mapped[0].x},${mapped[0].y}`;
@@ -38,10 +40,18 @@ const MiniChart = ({ poolId, width = 120, height = 40, color = "#00d4ff" }) => {
         }
         d += ` T ${mapped[mapped.length - 1].x},${mapped[mapped.length - 1].y}`;
         
-        return d;
-    }, [poolId, width, height]);
+        const linePathData = d;
+        
+        let fillPathData = null;
+        if (withFill) {
+            fillPathData = `${d} L ${width},${height} L 0,${height} Z`;
+        }
+
+        return { linePathData, fillPathData };
+    }, [poolId, width, height, withFill]);
 
     const filterId = `glow-${poolId.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const gradientId = `grad-${poolId.replace(/[^a-zA-Z0-9]/g, '')}`;
 
     return (
         <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
@@ -53,17 +63,33 @@ const MiniChart = ({ poolId, width = 120, height = 40, color = "#00d4ff" }) => {
                         <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                 </filter>
+
+                {withFill && (
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0" />
+                    </linearGradient>
+                )}
             </defs>
+            
+            {withFill && fillPathData && (
+                <path 
+                    d={fillPathData} 
+                    fill={`url(#${gradientId})`} 
+                    stroke="none"
+                />
+            )}
+
             <path 
-                d={pathData} 
+                d={linePathData} 
                 fill="none" 
                 stroke={color} 
-                strokeWidth="2.5" 
+                strokeWidth="3" 
                 strokeLinecap="round"
                 filter={`url(#${filterId})`}
             />
         </svg>
     );
-}
+};
 
 export default memo(MiniChart);

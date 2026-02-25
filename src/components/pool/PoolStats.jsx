@@ -64,14 +64,15 @@ const PoolStats = ({ reserves, loading, symbols, t, pool, formatTokenAmount, for
             
             {/* Chart SVG Placeholder */}
             <div className="flex-grow w-full relative mt-4 overflow-hidden rounded-xl flex items-end">
-                <div className={`absolute inset-0 bg-gradient-to-t from-[${primaryColor}]/20 via-transparent to-transparent opacity-50`}></div>
                 
-                <div className="w-full h-[200px] opacity-90 relative z-10 flex items-end">
+                <div className="w-full h-[200px] opacity-100 relative z-10 flex items-end">
                     <MiniChart 
                         poolId={`${symbolA}-${symbolB}`} 
                         color={primaryColor} 
                         width={800} 
-                        height={200} 
+                        height={200}
+                        withFill={true}
+                        className="w-full h-full"
                     />
                 </div>
             </div>
