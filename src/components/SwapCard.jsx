@@ -93,16 +93,16 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
         const fetchGas = async () => {
             if (!provider) return;
             try {
-                const feeData = await provider.getFeeData();
-                const gasPrice = feeData.gasPrice || 3000000000n;
+                const simulatedGasPrice = 15000000000n;
                 const estimatedGasLimit = 200000n;
-                const totalCostWei = gasPrice * estimatedGasLimit;
+
+                const totalCostWei = simulatedGasPrice * estimatedGasLimit;
                 const totalCostEth = parseFloat(ethers.formatEther(totalCostWei));
                 
                 const ethPrice = getTokenPrice('ETH') || 2500;
                 
                 const costUsd = (totalCostEth * ethPrice).toFixed(2);
-                setGasPriceUsd(costUsd);
+                setGasPriceUsd(costUsd === '0.00' ? '<0.01' : costUsd);
             } catch (e) {
                 console.warn("Gas estimation failed", e);
                 setGasPriceUsd("---");
@@ -209,50 +209,43 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
         setIsSwapping(true);
 
         const swapPromise = async () => {
-            const amountInWei = ethers.parseUnits(payAmount, payToken.decimals);
-            if (!receiveAmount) throw new Error("Price not updated yet");
-            const amountOutWei = ethers.parseUnits(receiveAmount, receiveToken.decimals);
-            
-            const slippageFactor = 10000n - BigInt(Math.floor(slippage * 100));
-            const amountOutMin = (amountOutWei * slippageFactor) / 10000n;
+            try {
+                const amountInWei = ethers.parseUnits(payAmount.toString(), payToken.decimals);
+                if (!receiveAmount) throw new Error("Price not updated yet");
+                
+                const safeReceiveAmount = parseFloat(receiveAmount).toFixed(receiveToken.decimals);
+                const amountOutWei = ethers.parseUnits(safeReceiveAmount, receiveToken.decimals);
+                
+                const safeSlippage = parseFloat(slippage) || 0.5;
+                const slippageFactor = 10000n - BigInt(Math.floor(safeSlippage * 100));
+                const amountOutMin = (amountOutWei * slippageFactor) / 10000n;
 
-            const deadlineInSeconds = Math.floor(Date.now() / 1000) + (deadline * 60);
-            const path = [payToken.address, receiveToken.address];
+                const deadlineInSeconds = Math.floor(Date.now() / 1000) + ((parseFloat(deadline) || 20) * 60);
+                const path = [payToken.address, receiveToken.address];
 
-            const tx = await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
-            await tx.wait();
-            
-            return tx;
+                const tx = await swapTokens(amountInWei, amountOutMin, path, deadlineInSeconds);
+                
+                if (tx && typeof tx.wait === 'function') {
+                    await tx.wait();
+                }
+                
+                return true;
+            } catch (error) {
+                console.error("=== SWAP ERROR DEBUG ===", error);
+                throw error;
+            }
         };
 
         await toast.promise(
             swapPromise(),
             {
                 loading: `Swapping ${payAmount} ${payToken.symbol}...`,
-                success: () => {
-                    if (refetchBalances) refetchBalances();
-
-                    return (
-                        <div className="flex flex-col">
-                            <span className="font-bold">Swap Successful! 🚀</span>
-                            <span className="text-sm opacity-80">
-                                Swapped {payAmount} {payToken.symbol} for {receiveAmount} {receiveToken.symbol}
-                            </span>
-                        </div>
-                    );
-                },
+                success: `Swap Successful! 🚀`,
                 error: (err) => {
-                    console.error(err);
                     let msg = "Transaction Failed";
-                    if (err.reason) msg = err.reason;
-                    if (err.message?.includes("user rejected")) msg = "User rejected request";
-                    
-                    return (
-                        <div className="flex flex-col">
-                            <span className="font-bold">Error ❌</span>
-                            <span className="text-sm opacity-80">{msg}</span>
-                        </div>
-                    );
+                    if (err?.reason) msg = err.reason;
+                    else if (err?.message?.includes("user rejected")) msg = "User rejected request";
+                    return `Error: ${msg}`;
                 },
             },
             {
@@ -264,7 +257,7 @@ const SwapCard = ({ t, account, balances, provider, connectWallet, refetchBalanc
             setReceiveAmount('');
             setTimeout(() => {
                 if (refetchBalances) refetchBalances();
-            }, 2000);
+            }, 1500);
         });
     };
 
