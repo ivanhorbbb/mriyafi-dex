@@ -1,12 +1,35 @@
-import { memo } from 'react';
+import { useMemo, memo } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
 import SimpleTooltip from '../ui/SimpleTooltip';
+import MiniChart from '../ui/MiniChart';
 
 const PoolStats = ({ reserves, loading, symbols, t, pool, formatTokenAmount, formatTooltip }) => {
     const { symbolA, symbolB } = symbols;
     const primaryColor = pool.isHot ? '#f0dfae' : '#00d4ff';
     const primaryClass = pool.isHot ? 'text-[#f0dfae]' : 'text-[#00d4ff]';
     const safeT = t;
+
+    const formattedFees = useMemo(() => {
+        if (!pool || !pool.tvl || !pool.apr) return '$0.00';
+
+        const parseAmount = (str) => {
+            const clean = str.toString().replace(/[$,%]/g, '');
+            let val = parseFloat(clean);
+            if (str.toString().includes('M')) return val * 1000000;
+            if (str.toString().includes('K')) return val * 1000;
+            return val || 0;
+        }
+
+        const tvl = parseAmount(pool.tvl);
+        const apr = parseAmount(pool.apr);
+
+        const dailyFees = (apr / 100) * tvl / 365;
+
+        if (dailyFees === 0) return '$0.00';
+        if (dailyFees < 0.01) return '< $0.01';
+        if (dailyFees >= 1000) return `$${(dailyFees / 1000).toFixed(2)}K`;
+        return `$${dailyFees.toFixed(2)}`;
+    }, [pool]);
 
     return (
         <div className="lg:col-span-2 p-8 relative flex flex-col justify-between min-h-[450px] border-b lg:border-b-0 lg:border-r border-white/10">
@@ -28,7 +51,7 @@ const PoolStats = ({ reserves, loading, symbols, t, pool, formatTokenAmount, for
 
                 <div className="min-w-0">
                     <div className="text-gray-400 text-sm mb-1 font-medium truncate">{t.fees}</div>
-                    <div className="text-white text-2xl font-bold tracking-tight truncate">$375K</div>
+                    <div className="text-white text-2xl font-bold tracking-tight truncate">{formattedFees}</div>
                 </div>
                 
                 <div className="text-left md:text-right min-w-0">
@@ -40,17 +63,17 @@ const PoolStats = ({ reserves, loading, symbols, t, pool, formatTokenAmount, for
             </div>
             
             {/* Chart SVG Placeholder */}
-            <div className="flex-grow w-full relative mt-4">
-                <svg viewBox="0 0 500 150" className="w-full h-full absolute inset-0 bottom-0" preserveAspectRatio="none">
-                        <defs>
-                        <linearGradient id="chartGradientDetail" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={primaryColor} stopOpacity="0.5" />
-                            <stop offset="100%" stopColor={primaryColor} stopOpacity="0" />
-                        </linearGradient>
-                    </defs>
-                    <path d="M0 100 C 50 120, 100 60, 150 80 S 250 40, 300 60 S 400 20, 450 40 S 480 30, 500 35" fill="none" stroke={primaryColor} strokeWidth="4" strokeLinecap="round"/>
-                    <path d="M0 100 C 50 120, 100 60, 150 80 S 250 40, 300 60 S 400 20, 450 40 S 480 30, 500 35 L 500 150 L 0 150 Z" fill="url(#chartGradientDetail)" stroke="none"/>
-                </svg>
+            <div className="flex-grow w-full relative mt-4 overflow-hidden rounded-xl flex items-end">
+                <div className={`absolute inset-0 bg-gradient-to-t from-[${primaryColor}]/20 via-transparent to-transparent opacity-50`}></div>
+                
+                <div className="w-full h-[200px] opacity-90 relative z-10 flex items-end">
+                    <MiniChart 
+                        poolId={`${symbolA}-${symbolB}`} 
+                        color={primaryColor} 
+                        width={800} 
+                        height={200} 
+                    />
+                </div>
             </div>
         </div>
     );
